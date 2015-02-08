@@ -1,0 +1,85 @@
+# An array of symbols. As contract storage space is at a premium, we'll want to
+# minimize string data in memory. This table maps integers to strings.
+#
+# Other type declarations here will refer to `symbol', which will be a number
+# in this table. We provide bidirectional lookup for other contracts, though we
+# expect symbol numbers provided to be resolved off chain and make this unique
+# and append only so that that is a safe operation.
+data symbol_count
+data number_to_symbol[2^32]
+data symbol_to_number[]
+
+# Minimized schema data.
+#
+# The schema data describes all existing items that can be issued. Notably, it
+# does not contain all properties of the item; only properties which are
+# related to individual item identity. It is half way between the client and
+# API schemas. 
+#
+# |property_count| is an integer. Each |key| is a symbol. Each item can have up
+# to 64 properties.
+data schema_count
+data schema[2^32](property_count, data[64](key, value))
+
+# Registry of attributes
+#
+# Describes all possible attributes that are stored in the blockchain
+# representation. This is a small subset of actual attributes, which are mostly
+# in-game powerups, instead of item description qualities.
+data attribute_count
+data attribute[2^32]()
+
+# Individual user's backpacks.
+#
+# - |item_count|: Number of items in the backpack.
+# - |backpack_capacity|: The number of items the user's backpack can hodl.
+#   Today's TF2 backpack has a maximum of 2000 slots.
+# - |items|: An array of key value pairs.
+data backpack[](item_count, backpack_capacity, items[2000]())
+
+# Start the contract with an empty symbol table and an empty schema table.
+def init():
+    self.symbol_count = 0
+    self.schema_count = 0
+
+# Appends a symbol to the symbol table.
+def AddSymbol(symbol):
+    # TODO: Permission checks.
+    if not self.symbol_to_number[symbol]:
+        self.number_to_symbol[symbol_count] = symbol
+        self.symbol_to_number[symbol] = symbol_count
+        self.symbol_count = symbol_count + 1
+
+# Returns the numeric value for the symbol.
+def GetSymbol(symbol):
+    return self.symbol_to_number[symbol]
+
+# Adds an item to the database.
+#
+# |data| is an array of key/value pairs. |size| is the number of elements
+# in |data|; not the number of key/value pairs.
+def AddSchemaItem(data, size):
+    # TODO: Permission checks.
+    self.schema[schema_count].property_count = size
+    i = 0
+    while i < size:
+        self.schema[schema_count].data[i].key = data[i]
+        self.schema[schema_count].data[i].value = data[i + 1]
+        i = i + 2
+
+# Adds or sets a property on an existing item.
+def SetSchemaProperty(defindex, key, value):
+    # TODO: Permission checks.
+    # TODO: Unit test this to make sure it does what I think it does.
+    if self.schema[defindex].property_count:
+        i = 0
+        while i < self.schema[defindex].property_count:
+            if self.schema[defindex].data[i].key == key:
+                self.schema[defindex].data[i].value = value
+                return
+
+        # We did not find an existing property. So instead add it to the end.
+        i = self.schema[defindex].property_count
+        self.schema[defindex].data[i].key = key
+        self.schema[defindex].data[i].value = value
+        self.schema[defindex].property_count = i + 1
