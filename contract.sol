@@ -28,8 +28,10 @@ contract BackpackSystem {
 
     // Might want to hoist marketability here.
 
-    mapping (uint32 => uint32) int_properties;
-    mapping (uint32 => string32) str_properties;
+    // I want arrays. ;_;
+    uint32 next_attribute_id;
+    mapping (uint32 => uint64) int_attributes;
+    // string attributes anyone?
     // attributes
   }
 
@@ -86,8 +88,23 @@ contract BackpackSystem {
       item_id = 0;
     }
   }
+
+  function AddAttributeToUnlockedItem(uint64 item_id,
+                                      uint32 attribute_id,
+                                      uint64 value) {
+    // TODO: Proper permissions here?
+    if (all_items[item_id].locked == false) {
+      // TODO: Need arrays to make the following iterable.
+      all_items[item_id].int_attributes[attribute_id] = value;
+    }
+  }
   
-  function LockItem(uint32 id) {
-    
+  function LockItem(uint64 item_id) {
+    // Wait, I don't think we can safely use tx.origin here. (Think throught
+    // the implications here.)
+    if (msg.sender != owner) return;
+
+    if (all_items[item_id].item_id == item_id)
+      all_items[item_id].locked = true;
   }
 }
