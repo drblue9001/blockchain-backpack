@@ -1,5 +1,13 @@
 #!/usr/bin/python
 
+# Real times of running the naieve version:
+#   real	6m26.522s
+#   real	6m28.551s
+#
+# Real times of the version with the first round of non-principeled functions:
+#   real	2m38.921s
+#   real	2m38.879s
+
 import json
 from pyethereum import tester
 
@@ -43,6 +51,13 @@ times_to_add_backpack_space = (num_slots - 300) / 100
 for _ in range(times_to_add_backpack_space):
   c.AddBackpackSpaceForUser(65)
 
+# Separate out the items into no, one, two, and many attribute items
+no_attribute_items = []
+one_attribute_items = []
+two_attribute_items = []
+many_attribute_items = []
+# TODO: Probably worth it to add 3 - 6, if possible.
+
 for item in backpack_json['items']:
   defindex = item['defindex']
   schema_item = items_by_defindex[defindex];
@@ -56,23 +71,183 @@ for item in backpack_json['items']:
       real_attr = attributes_by_name[item_attr['name']]
       schema_attributes_by_defindex[real_attr['defindex']] = real_attr
 
-  print "Importing item %s..." % schema_item['item_name']
-
-  # Create the item instance.
-  item_id = c.FullImportItem(65, item['original_id'], defindex, item['level'],
-                             item['quality'], item['origin'])
-
-  on_item_attr = {}
+  on_item_attr = []
   if 'attributes' in item:
     for a in item['attributes']:
       a_defindex = a['defindex']
       if not a_defindex in schema_attributes_by_defindex:
         # TODO: For now, only add attributes that are ints.
         if type(a['value']) is int:
-          print " - Setting property '%s' to '%s'" % (
-            attributes_by_defindex[a_defindex]['name'], a['value'])
-          c.AddAttributeToUnlockedItem(item_id, a_defindex, a['value'])
+          on_item_attr.append({
+              'defindex': a_defindex,
+              'value': a['value'],
+              'name': attributes_by_defindex[a_defindex]['name']})
 
-  c.LockItem(item_id);
+  if len(on_item_attr) == 0:
+    no_attribute_items.append([item, on_item_attr])
+  elif len(on_item_attr) == 1:
+    one_attribute_items.append([item, on_item_attr])
+  elif len(on_item_attr) == 2:
+    two_attribute_items.append([item, on_item_attr])
+  else:
+    many_attribute_items.append([item, on_item_attr])
 
+while len(no_attribute_items):
+  if (len(no_attribute_items) >= 2):
+    [item_one, _] = no_attribute_items.pop()
+    defindex_one = item_one['defindex']
+    schema_item_one = items_by_defindex[defindex_one];
 
+    [item_two, _] = no_attribute_items.pop()
+    defindex_two = item_two['defindex']
+    schema_item_two = items_by_defindex[defindex_two];
+
+    print "Importing items (%s, %s)..." % (schema_item_one['item_name'],
+                                           schema_item_two['item_name'])
+
+    c.QuickImport2Items(65,
+                        item_one['original_id'], defindex_one,
+                        item_one['level'], item_one['quality'],
+                        item_one['origin'],
+                        item_two['original_id'], defindex_two,
+                        item_two['level'], item_two['quality'],
+                        item_two['origin'])
+  else:
+    # TODO: Test this; my backpack has an even number of no-attribute items.
+    [item_one, _] = no_attribute_items.pop()
+    defindex_one = item_one['defindex']
+    schema_item_one = items_by_defindex[defindex_one];
+
+    print "Importing item %s..." % schema_item_one['item_name']
+
+    c.QuickImportItem(65, item_one['original_id'], defindex_one,
+                      item_one['level'], item_one['quality'],
+                      item_one['origin'])
+
+while len(one_attribute_items):
+  [item_one, attributes] = one_attribute_items.pop()
+  defindex_one = item_one['defindex']
+  schema_item_one = items_by_defindex[defindex_one];
+
+  only_attribute = attributes.pop()
+  print "Importing item %s {%s=%s}..." % (schema_item_one['item_name'],
+                                          only_attribute['name'],
+                                          only_attribute['value'])
+
+  c.QuickImportItemWith1Attribute(65, item_one['original_id'], defindex_one,
+                                  item_one['level'], item_one['quality'],
+                                  item_one['origin'],
+                                  only_attribute['defindex'],
+                                  only_attribute['value'])
+
+while len(two_attribute_items):
+  [item_one, attributes] = two_attribute_items.pop()
+  defindex_one = item_one['defindex']
+  schema_item_one = items_by_defindex[defindex_one];
+
+  one_attribute = attributes.pop()
+  two_attribute = attributes.pop()
+  print "Importing item %s {%s=%s, %s=%s}..." % (schema_item_one['item_name'],
+                                                 one_attribute['name'],
+                                                 one_attribute['value'],
+                                                 two_attribute['name'],
+                                                 two_attribute['value'])
+
+  c.QuickImportItemWith2Attributes(65, item_one['original_id'], defindex_one,
+                                   item_one['level'], item_one['quality'],
+                                   item_one['origin'],
+                                   one_attribute['defindex'],
+                                   one_attribute['value'],
+                                   two_attribute['defindex'],
+                                   two_attribute['value'])
+
+while len(two_attribute_items):
+  [item_one, attributes] = two_attribute_items.pop()
+  defindex_one = item_one['defindex']
+  schema_item_one = items_by_defindex[defindex_one];
+
+  one_attribute = attributes.pop()
+  two_attribute = attributes.pop()
+  print "Importing item %s {%s=%s, %s=%s}..." % (schema_item_one['item_name'],
+                                                 one_attribute['name'],
+                                                 one_attribute['value'],
+                                                 two_attribute['name'],
+                                                 two_attribute['value'])
+
+  c.QuickImportItemWith2Attributes(65, item_one['original_id'], defindex_one,
+                                   item_one['level'], item_one['quality'],
+                                   item_one['origin'],
+                                   one_attribute['defindex'],
+                                   one_attribute['value'],
+                                   two_attribute['defindex'],
+                                   two_attribute['value'])
+
+# TODO: Do we similarly special case 3? It looks like all the Halloween 2014
+# Haunted items consistenly have 3 attributes.
+
+while len(many_attribute_items):
+  [item_one, attributes] = many_attribute_items.pop()
+  defindex_one = item_one['defindex']
+  schema_item_one = items_by_defindex[defindex_one];
+
+  one_attribute = attributes.pop()
+  two_attribute = attributes.pop()
+  print "Importing item %s {%s=%s, %s=%s}..." % (schema_item_one['item_name'],
+                                                 one_attribute['name'],
+                                                 one_attribute['value'],
+                                                 two_attribute['name'],
+                                                 two_attribute['value'])
+
+  contract_item_id = c.StartFullImportItemWith2Attributes(
+      65, item_one['original_id'], defindex_one,
+      item_one['level'], item_one['quality'],
+      item_one['origin'],
+      one_attribute['defindex'],
+      one_attribute['value'],
+      two_attribute['defindex'],
+      two_attribute['value'])
+
+  while len(attributes):
+    if len(attributes) >= 5:
+      one_attr = attributes.pop()
+      two_attr = attributes.pop()
+      three_attr = attributes.pop()
+      four_attr = attributes.pop()
+      five_attr = attributes.pop()
+
+      print (" - Setting properties {'%s' to '%s', '%s' to '%s', '%s' to '%s'"
+             ", '%s' to '%s', '%s' to '%s'}"
+             % (one_attr['name'], one_attr['value'],
+                two_attr['name'], two_attr['value'],
+                three_attr['name'], three_attr['value'],
+                four_attr['name'], four_attr['value'],
+                five_attr['name'], five_attr['value']))
+      c.Add5AttributesToUnlockedItem(contract_item_id,
+                                     one_attr['defindex'], one_attr['value'],
+                                     two_attr['defindex'], two_attr['value'],
+                                     three_attr['defindex'],
+                                     three_attr['value'],
+                                     four_attr['defindex'],
+                                     four_attr['value'],
+                                     five_attr['defindex'],
+                                     five_attr['value'])
+    elif len(attributes) >= 3:
+      one_attr = attributes.pop()
+      two_attr = attributes.pop()
+      three_attr = attributes.pop()
+      print (" - Setting properties {'%s' to '%s', '%s' to '%s', '%s' to '%s'}"
+             % (one_attr['name'], one_attr['value'],
+                two_attr['name'], two_attr['value'],
+                three_attr['name'], three_attr['value']))
+      c.Add3AttributesToUnlockedItem(contract_item_id,
+                                     one_attr['defindex'], one_attr['value'],
+                                     two_attr['defindex'], two_attr['value'],
+                                     three_attr['defindex'],
+                                     three_attr['value'])
+    else:
+      attr = attributes.pop()
+      print " - Setting property '%s' to '%s'" % (attr['name'], attr['value'])
+      c.AddAttributeToUnlockedItem(contract_item_id, attr['defindex'],
+                                   attr['value'])
+
+  c.LockItem(contract_item_id)
