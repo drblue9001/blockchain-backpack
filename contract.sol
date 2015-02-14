@@ -129,6 +129,24 @@ contract BackpackSystem {
     LockItem(item_id);
   }
 
+  function QuickImportItemWith3Attributes(address user, uint64 original_id,
+                                          uint32 defindex, uint16 level,
+                                          uint16 quality, uint16 origin,
+                                          uint32 one_attribute_id,
+                                          uint64 one_attribute_value,
+                                          uint32 two_attribute_id,
+                                          uint64 two_attribute_value,
+                                          uint32 three_attribute_id,
+                                          uint64 three_attribute_value) {
+    uint64 item_id = StartFullImportItem(user, original_id, defindex, level,
+                                         quality, origin);
+    AddAttributeToUnlockedItem(item_id, one_attribute_id, one_attribute_value);
+    AddAttributeToUnlockedItem(item_id, two_attribute_id, two_attribute_value);
+    AddAttributeToUnlockedItem(item_id, three_attribute_id,
+                               three_attribute_value);
+    LockItem(item_id);
+  }
+
   // Imports an item from off chain with |original_id| for |user|.
   function StartFullImportItem(address user, uint64 original_id,
                                uint32 defindex, uint16 level,
@@ -158,18 +176,22 @@ contract BackpackSystem {
     }
   }
 
-  function StartFullImportItemWith2Attributes(address user, uint64 original_id,
+  function StartFullImportItemWith3Attributes(address user, uint64 original_id,
                                               uint32 defindex, uint16 level,
                                               uint16 quality, uint16 origin,
                                               uint32 one_attribute_id,
                                               uint64 one_attribute_value,
                                               uint32 two_attribute_id,
-                                              uint64 two_attribute_value)
+                                              uint64 two_attribute_value,
+                                              uint32 three_attribute_id,
+                                              uint64 three_attribute_value)
            returns (uint64 item_id) {
     item_id = StartFullImportItem(user, original_id, defindex, level,
                                   quality, origin);
     AddAttributeToUnlockedItem(item_id, one_attribute_id, one_attribute_value);
     AddAttributeToUnlockedItem(item_id, two_attribute_id, two_attribute_value);
+    AddAttributeToUnlockedItem(item_id, three_attribute_id,
+                               three_attribute_value);
   }
 
   function AddAttributeToUnlockedItem(uint64 item_id,
@@ -179,6 +201,19 @@ contract BackpackSystem {
     if (all_items[item_id].locked == false) {
       // TODO: Need arrays to make the following iterable.
       all_items[item_id].int_attributes[attribute_id] = value;
+    }
+  }
+
+  function Add2AttributesToUnlockedItem(uint64 item_id,
+                                        uint32 one_attribute_id,
+                                        uint64 one_value,
+                                        uint32 two_attribute_id,
+                                        uint64 two_value) {
+    // TODO: Proper permissions here?
+    if (all_items[item_id].locked == false) {
+      // TODO: Need arrays to make the following iterable.
+      all_items[item_id].int_attributes[one_attribute_id] = one_value;
+      all_items[item_id].int_attributes[two_attribute_id] = two_value;
     }
   }
 
@@ -195,6 +230,25 @@ contract BackpackSystem {
       all_items[item_id].int_attributes[one_attribute_id] = one_value;
       all_items[item_id].int_attributes[two_attribute_id] = two_value;
       all_items[item_id].int_attributes[three_attribute_id] = three_value;
+    }
+  }
+
+  function Add4AttributesToUnlockedItem(uint64 item_id,
+                                        uint32 one_attribute_id,
+                                        uint64 one_value,
+                                        uint32 two_attribute_id,
+                                        uint64 two_value,
+                                        uint32 three_attribute_id,
+                                        uint64 three_value,
+                                        uint32 four_attribute_id,
+                                        uint64 four_value) {
+    // TODO: Proper permissions here?
+    if (all_items[item_id].locked == false) {
+      // TODO: Need arrays to make the following iterable.
+      all_items[item_id].int_attributes[one_attribute_id] = one_value;
+      all_items[item_id].int_attributes[two_attribute_id] = two_value;
+      all_items[item_id].int_attributes[three_attribute_id] = three_value;
+      all_items[item_id].int_attributes[four_attribute_id] = four_value;
     }
   }
 
@@ -217,6 +271,31 @@ contract BackpackSystem {
       all_items[item_id].int_attributes[three_attribute_id] = three_value;
       all_items[item_id].int_attributes[four_attribute_id] = four_value;
       all_items[item_id].int_attributes[five_attribute_id] = five_value;
+    }
+  }
+
+  function Add6AttributesToUnlockedItem(uint64 item_id,
+                                        uint32 one_attribute_id,
+                                        uint64 one_value,
+                                        uint32 two_attribute_id,
+                                        uint64 two_value,
+                                        uint32 three_attribute_id,
+                                        uint64 three_value,
+                                        uint32 four_attribute_id,
+                                        uint64 four_value,
+                                        uint32 five_attribute_id,
+                                        uint64 five_value,
+                                        uint32 six_attribute_id,
+                                        uint64 six_value) {
+    // TODO: Proper permissions here?
+    if (all_items[item_id].locked == false) {
+      // TODO: Need arrays to make the following iterable.
+      all_items[item_id].int_attributes[one_attribute_id] = one_value;
+      all_items[item_id].int_attributes[two_attribute_id] = two_value;
+      all_items[item_id].int_attributes[three_attribute_id] = three_value;
+      all_items[item_id].int_attributes[four_attribute_id] = four_value;
+      all_items[item_id].int_attributes[five_attribute_id] = five_value;
+      all_items[item_id].int_attributes[six_attribute_id] = six_value;
     }
   }
 

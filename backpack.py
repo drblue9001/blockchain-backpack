@@ -7,6 +7,10 @@
 # Real times of the version with the first round of non-principeled functions:
 #   real	2m38.921s
 #   real	2m38.879s
+#
+# Real times after maxing out the AddXAttributes and QuickImport functions:
+#   real	2m23.947s
+#   real	2m11.286s
 
 import json
 from pyethereum import tester
@@ -55,8 +59,9 @@ for _ in range(times_to_add_backpack_space):
 no_attribute_items = []
 one_attribute_items = []
 two_attribute_items = []
+three_attribute_items = []
 many_attribute_items = []
-# TODO: Probably worth it to add 3 - 6, if possible.
+# Three is the maximum we can cram in one message; I'd do four otherwise.
 
 for item in backpack_json['items']:
   defindex = item['defindex']
@@ -89,6 +94,8 @@ for item in backpack_json['items']:
     one_attribute_items.append([item, on_item_attr])
   elif len(on_item_attr) == 2:
     two_attribute_items.append([item, on_item_attr])
+  elif len(on_item_attr) == 3:
+    three_attribute_items.append([item, on_item_attr])
   else:
     many_attribute_items.append([item, on_item_attr])
 
@@ -161,29 +168,32 @@ while len(two_attribute_items):
                                    two_attribute['defindex'],
                                    two_attribute['value'])
 
-while len(two_attribute_items):
-  [item_one, attributes] = two_attribute_items.pop()
+while len(three_attribute_items):
+  [item_one, attributes] = three_attribute_items.pop()
   defindex_one = item_one['defindex']
   schema_item_one = items_by_defindex[defindex_one];
 
   one_attribute = attributes.pop()
   two_attribute = attributes.pop()
-  print "Importing item %s {%s=%s, %s=%s}..." % (schema_item_one['item_name'],
-                                                 one_attribute['name'],
-                                                 one_attribute['value'],
-                                                 two_attribute['name'],
-                                                 two_attribute['value'])
+  three_attribute = attributes.pop()
+  print "Importing item %s {%s=%s, %s=%s, %s=%s}..." % (
+    schema_item_one['item_name'],
+    one_attribute['name'],
+    one_attribute['value'],
+    two_attribute['name'],
+    two_attribute['value'],
+    three_attribute['name'],
+    three_attribute['value'])
 
-  c.QuickImportItemWith2Attributes(65, item_one['original_id'], defindex_one,
+  c.QuickImportItemWith3Attributes(65, item_one['original_id'], defindex_one,
                                    item_one['level'], item_one['quality'],
                                    item_one['origin'],
                                    one_attribute['defindex'],
                                    one_attribute['value'],
                                    two_attribute['defindex'],
-                                   two_attribute['value'])
-
-# TODO: Do we similarly special case 3? It looks like all the Halloween 2014
-# Haunted items consistenly have 3 attributes.
+                                   two_attribute['value'],
+                                   three_attribute['defindex'],
+                                   three_attribute['value'])
 
 while len(many_attribute_items):
   [item_one, attributes] = many_attribute_items.pop()
@@ -192,23 +202,57 @@ while len(many_attribute_items):
 
   one_attribute = attributes.pop()
   two_attribute = attributes.pop()
-  print "Importing item %s {%s=%s, %s=%s}..." % (schema_item_one['item_name'],
-                                                 one_attribute['name'],
-                                                 one_attribute['value'],
-                                                 two_attribute['name'],
-                                                 two_attribute['value'])
+  three_attribute = attributes.pop()
+  print "Importing item %s {%s=%s, %s=%s, %s=%s}..." % (
+    schema_item_one['item_name'],
+    one_attribute['name'],
+    one_attribute['value'],
+    two_attribute['name'],
+    two_attribute['value'],
+    three_attribute['name'],
+    three_attribute['value'])
 
-  contract_item_id = c.StartFullImportItemWith2Attributes(
+  contract_item_id = c.StartFullImportItemWith3Attributes(
       65, item_one['original_id'], defindex_one,
       item_one['level'], item_one['quality'],
       item_one['origin'],
       one_attribute['defindex'],
       one_attribute['value'],
       two_attribute['defindex'],
-      two_attribute['value'])
+      two_attribute['value'],
+      three_attribute['defindex'],
+      three_attribute['value'])
 
   while len(attributes):
-    if len(attributes) >= 5:
+    # 6 is the maximum number of attributes we can cram in a message.
+    if len(attributes) >= 6:
+      one_attr = attributes.pop()
+      two_attr = attributes.pop()
+      three_attr = attributes.pop()
+      four_attr = attributes.pop()
+      five_attr = attributes.pop()
+      six_attr = attributes.pop()
+
+      print (" - Setting properties {'%s' to '%s', '%s' to '%s', '%s' to '%s'"
+             ", '%s' to '%s', '%s' to '%s', '%s' to '%s'}"
+             % (one_attr['name'], one_attr['value'],
+                two_attr['name'], two_attr['value'],
+                three_attr['name'], three_attr['value'],
+                four_attr['name'], four_attr['value'],
+                five_attr['name'], five_attr['value'],
+                six_attr['name'], six_attr['value']))
+      c.Add6AttributesToUnlockedItem(contract_item_id,
+                                     one_attr['defindex'], one_attr['value'],
+                                     two_attr['defindex'], two_attr['value'],
+                                     three_attr['defindex'],
+                                     three_attr['value'],
+                                     four_attr['defindex'],
+                                     four_attr['value'],
+                                     five_attr['defindex'],
+                                     five_attr['value'],
+                                     six_attr['defindex'],
+                                     six_attr['value'])
+    elif len(attributes) >= 5:
       one_attr = attributes.pop()
       two_attr = attributes.pop()
       three_attr = attributes.pop()
@@ -231,6 +275,25 @@ while len(many_attribute_items):
                                      four_attr['value'],
                                      five_attr['defindex'],
                                      five_attr['value'])
+    elif len(attributes) >= 4:
+      one_attr = attributes.pop()
+      two_attr = attributes.pop()
+      three_attr = attributes.pop()
+      four_attr = attributes.pop()
+
+      print (" - Setting properties {'%s' to '%s', '%s' to '%s', '%s' to '%s'"
+             ", '%s' to '%s'}"
+             % (one_attr['name'], one_attr['value'],
+                two_attr['name'], two_attr['value'],
+                three_attr['name'], three_attr['value'],
+                four_attr['name'], four_attr['value']))
+      c.Add4AttributesToUnlockedItem(contract_item_id,
+                                     one_attr['defindex'], one_attr['value'],
+                                     two_attr['defindex'], two_attr['value'],
+                                     three_attr['defindex'],
+                                     three_attr['value'],
+                                     four_attr['defindex'],
+                                     four_attr['value'])
     elif len(attributes) >= 3:
       one_attr = attributes.pop()
       two_attr = attributes.pop()
@@ -244,6 +307,15 @@ while len(many_attribute_items):
                                      two_attr['defindex'], two_attr['value'],
                                      three_attr['defindex'],
                                      three_attr['value'])
+    elif len(attributes) >= 2:
+      one_attr = attributes.pop()
+      two_attr = attributes.pop()
+      print (" - Setting properties {'%s' to '%s', '%s' to '%s'}"
+             % (one_attr['name'], one_attr['value'],
+                two_attr['name'], two_attr['value']))
+      c.Add2AttributesToUnlockedItem(contract_item_id,
+                                     one_attr['defindex'], one_attr['value'],
+                                     two_attr['defindex'], two_attr['value'])
     else:
       attr = attributes.pop()
       print " - Setting property '%s' to '%s'" % (attr['name'], attr['value'])
