@@ -59,8 +59,8 @@ for item in backpack_json['items']:
   print "Importing item %s..." % schema_item['item_name']
 
   # Create the item instance.
-  item_id = c.ImportItem(65, item['original_id'], defindex, item['level'],
-                         item['quality'], item['origin'])
+  item_id = c.FullImportItem(65, item['original_id'], defindex, item['level'],
+                             item['quality'], item['origin'])
 
   on_item_attr = {}
   if 'attributes' in item:
