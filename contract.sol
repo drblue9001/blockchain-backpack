@@ -1,9 +1,9 @@
 // Our simplified item system.
 //
-// TODO: There's a lot of places in this contract where we should make
-// nonprincipled optimizations to make execution cheaper. Lots of users will
-// already have a backpack size that should be imported, lots of items have
-// no attributes (or only one), etc.
+// A note on code organization: This contact should be kept to core, clean
+// functionality. Any methods which cram multiple operations into a single
+// message should go into BackpackSystemWithConvenienceMethods, which exists
+// for those sorts of non-principled operations.
 contract BackpackSystem {
   // A structure that keeps track of which items a user owns. Instead of
   // keeping the items on the user, it instead keeps track of the global item
@@ -88,6 +88,72 @@ contract BackpackSystem {
     LockItem(item_id);
   }
 
+  // Imports an item from off chain with |original_id| for |user|.
+  function StartFullImportItem(address user, uint64 original_id,
+                               uint32 defindex, uint16 level,
+                               uint16 quality, uint16 origin)
+           returns (uint64 item_id) {
+    User u = user_backpacks[user];
+    if (u.backpack_capacity > 0 && u.num_items < u.backpack_capacity) {
+      // Create a new item using the next item id.
+      item_id = next_item_id;
+      next_item_id += 2;
+      ItemInstance i = all_items[item_id];
+      i.owner = user;
+      i.locked = false;
+      i.item_id = item_id;
+      i.original_id = original_id;
+      i.defindex = defindex;
+      i.level = level;
+      i.quality = quality;
+      i.quantity = 0;
+      i.origin = origin;
+
+      // Place a reference to this item in the users backpack.
+      u.item_ids[u.num_items] = item_id;
+      u.num_items++;
+    } else {
+      item_id = 0;
+    }
+  }
+
+  function AddAttributeToUnlockedItem(uint64 item_id,
+                                      uint32 attribute_id,
+                                      uint64 value) {
+    // TODO: Proper permissions here?
+    if (all_items[item_id].locked == false) {
+      // TODO: Need arrays to make the following iterable.
+      all_items[item_id].int_attributes[attribute_id] = value;
+    }
+  }
+
+  // Marks an item so that it will no longer be modifiable without first
+  // unlocking it. (Can be performed by both the item owner, and the system
+  // owner.)
+  function LockItem(uint64 item_id) {
+    if (all_items[item_id].item_id == item_id) {
+      if (msg.sender != owner && tx.origin != all_items[item_id].owner)
+        return;
+
+      all_items[item_id].locked = true;
+    }
+  }
+
+  // Unlocks an item for modification. This can only be called from a
+  // transaction initiated by the owner of the item.
+  function UnlockItem(uint64 item_id) {
+    if (all_items[item_id].item_id == item_id) {
+      if (tx.origin != all_items[item_id].owner)
+        return;
+
+      all_items[item_id].locked = false;
+    }
+  }
+}
+
+// This contract should only contain methods which combine multiple operations
+// above into one method call to minimize gas price.
+contract BackpackSystemWithConvenienceMethods is BackpackSystem {
   function QuickImport2Items(address user,
                              uint64 one_original_id, uint32 one_defindex,
                              uint16 one_level, uint16 one_quality,
@@ -147,35 +213,6 @@ contract BackpackSystem {
     LockItem(item_id);
   }
 
-  // Imports an item from off chain with |original_id| for |user|.
-  function StartFullImportItem(address user, uint64 original_id,
-                               uint32 defindex, uint16 level,
-                               uint16 quality, uint16 origin)
-           returns (uint64 item_id) {
-    User u = user_backpacks[user];
-    if (u.backpack_capacity > 0 && u.num_items < u.backpack_capacity) {
-      // Create a new item using the next item id.
-      item_id = next_item_id;
-      next_item_id += 2;
-      ItemInstance i = all_items[item_id];
-      i.owner = user;
-      i.locked = false;
-      i.item_id = item_id;
-      i.original_id = original_id;
-      i.defindex = defindex;
-      i.level = level;
-      i.quality = quality;
-      i.quantity = 0;
-      i.origin = origin;
-
-      // Place a reference to this item in the users backpack.
-      u.item_ids[u.num_items] = item_id;
-      u.num_items++;
-    } else {
-      item_id = 0;
-    }
-  }
-
   function StartFullImportItemWith3Attributes(address user, uint64 original_id,
                                               uint32 defindex, uint16 level,
                                               uint16 quality, uint16 origin,
@@ -192,16 +229,6 @@ contract BackpackSystem {
     AddAttributeToUnlockedItem(item_id, two_attribute_id, two_attribute_value);
     AddAttributeToUnlockedItem(item_id, three_attribute_id,
                                three_attribute_value);
-  }
-
-  function AddAttributeToUnlockedItem(uint64 item_id,
-                                      uint32 attribute_id,
-                                      uint64 value) {
-    // TODO: Proper permissions here?
-    if (all_items[item_id].locked == false) {
-      // TODO: Need arrays to make the following iterable.
-      all_items[item_id].int_attributes[attribute_id] = value;
-    }
   }
 
   function Add2AttributesToUnlockedItem(uint64 item_id,
@@ -296,29 +323,6 @@ contract BackpackSystem {
       all_items[item_id].int_attributes[four_attribute_id] = four_value;
       all_items[item_id].int_attributes[five_attribute_id] = five_value;
       all_items[item_id].int_attributes[six_attribute_id] = six_value;
-    }
-  }
-
-  // Marks an item so that it will no longer be modifiable without first
-  // unlocking it. (Can be performed by both the item owner, and the system
-  // owner.)
-  function LockItem(uint64 item_id) {
-    if (all_items[item_id].item_id == item_id) {
-      if (msg.sender != owner && tx.origin != all_items[item_id].owner)
-        return;
-
-      all_items[item_id].locked = true;
-    }
-  }
-
-  // Unlocks an item for modification. This can only be called from a
-  // transaction initiated by the owner of the item.
-  function UnlockItem(uint64 item_id) {
-    if (all_items[item_id].item_id == item_id) {
-      if (tx.origin != all_items[item_id].owner)
-        return;
-
-      all_items[item_id].locked = false;
     }
   }
 }
