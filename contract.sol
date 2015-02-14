@@ -30,10 +30,17 @@ contract BackpackSystem {
   // or whatnot becomes more costly, as it has to copy all previous state. We
   // replace the copying on own-user modification with a lock bit. Transactions
   // by a user are able to unlock an item, in which case other contracts are
-  // able to then modify it.
+  // able to then modify it. (If this is an important property, we could add
+  // a redirection table, though.)
   struct ItemInstance {
-    address owner;
     bool locked;
+
+    // This item's current owner.
+    address owner;
+
+    // In addition to storing the owner, we also store the offset into the
+    // owner's backpack which references this item.
+    uint16 bp_position;
 
     uint64 item_id;
     uint64 original_id;
@@ -111,6 +118,7 @@ contract BackpackSystem {
 
       // Place a reference to this item in the users backpack.
       u.item_ids[u.num_items] = item_id;
+      i.bp_position = u.num_items;
       u.num_items++;
     } else {
       item_id = 0;
@@ -139,14 +147,41 @@ contract BackpackSystem {
     }
   }
 
-  // Unlocks an item for modification. This can only be called from a
-  // transaction initiated by the owner of the item.
+  // Unlocks an item for modification. Can only be initiated by the item owner.
   function UnlockItem(uint64 item_id) {
-    if (all_items[item_id].item_id == item_id) {
-      if (tx.origin != all_items[item_id].owner)
-        return;
+    if (IsInvalidUserActionForItem(item_id)) return;
+    all_items[item_id].locked = false;
+  }
 
-      all_items[item_id].locked = false;
+  // Destroys an item. Can only be initiated by the item owner.
+  function DestroyItem(uint64 item_id) {
+    if (IsInvalidUserActionForItem(item_id)) return;
+    address owner = all_items[item_id].owner;
+    uint16 backpack_position = all_items[item_id].bp_position;
+    delete all_items[item_id];
+
+    // We also remove the reference to the now deleted item in the user's bp.
+    User u = user_backpacks[owner];
+    if (u.num_items > 1) {
+      // Because we don't allow 'holes' in the bp to minimize scans, we take
+      // the last item and move it to the deleted position.
+      u.item_ids[backpack_position] = u.item_ids[u.num_items - 1];
+      u.item_ids[u.num_items - 1] = 0;
+    } else {
+      u.item_ids[backpack_position] = 0;
+    }
+
+    u.num_items--;
+  }
+
+  // Checks if this is part of a transaction initiated by the owner.
+  function IsInvalidUserActionForItem(uint64 item_id) private constant
+      returns(bool invalid) {
+    ItemInstance i = all_items[item_id];
+    if (i.item_id == item_id) {
+      invalid = tx.origin != i.owner;
+    } else {
+      invalid = false;
     }
   }
 }
