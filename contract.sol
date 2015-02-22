@@ -1,3 +1,33 @@
+
+// An abstract recipee.
+//
+// TODO: This currently hard codes the idea of a single item as the argument
+// so that we can get something working.
+contract Recipee {
+  function ExecuteRecipee(uint64 first_item_id,
+                          uint64 second_item_id) returns (bool success) { }
+}
+
+contract SupplyCrateThree is Recipee {
+  function ExecuteRecipee(uint64 this_item_id,
+                          uint64 key_item_id) returns (bool success) {
+    BackpackSystem backpack = BackpackSystem(msg.sender);
+
+    // Make sure that the items are what they claim to be.
+    if (backpack.GetItemDefindex(this_item_id) != 5045) return;
+    if (backpack.GetItemDefindex(key_item_id) != 5021) return;
+
+    // Why delete the previous items before granting the new item? Because
+    // let's say that the users backpack is full at the time they execute the
+    // recipee. We delete the previous two items to make room.
+    backpack.DestroyItem(this_item_id);
+    backpack.DestroyItem(key_item_id);
+
+    // For now, we just hard grant "A Distinctive Lack of Hue"
+    backpack.GrantNewItem(tx.origin, 5040, 5, 8);
+  }
+}
+
 // Our simplified item system.
 //
 // A note on code organization: This contact should be kept to core, clean
@@ -14,6 +44,14 @@ contract BackpackSystem {
     // TODO: This should be an array of 18 * 100, the maximum
     // capacity of a backpack in the first place.
     mapping (uint16 => uint64) item_ids;
+  }
+
+  function GetNumItems(address user) returns (uint16 count) {
+    return user_backpacks[user].num_items;
+  }
+
+  function GetItemID(address user, uint16 position) returns (uint64 id) {
+    return user_backpacks[user].item_ids[position];
   }
 
   // An individual item.
@@ -65,12 +103,16 @@ contract BackpackSystem {
   mapping (uint64 => ItemInstance) all_items;
   mapping (address => User) user_backpacks;
 
+  // TODO: Figure out why function locals don't work here.
+  SupplyCrateThree recipee;
+
   function BackpackSystem() {
     owner = msg.sender;
     // As a way of having items both on chain, and off chain, compromise and
     // say that the item ids are all off chain until item 4000000000, then all
     // even numbers are on chain, and all odd numbers are off chain.
     next_item_id = 4000000000;
+    recipee = new SupplyCrateThree();
   }
 
   function CreateUser(address user) {
@@ -87,6 +129,35 @@ contract BackpackSystem {
       u.backpack_capacity += 100;
   }
 
+  // Creates an unlocked item
+  function GrantNewItem(address user, uint32 defindex, uint16 quality,
+                        uint16 origin) returns (uint64 item_id) {
+    // TODO: Check a list of contracts that may grant items.
+    uint16 level = 5; // TODO: Calculate this from defindex.
+
+    User u = user_backpacks[user];
+    if (u.backpack_capacity > 0 && u.num_items < u.backpack_capacity) {
+      // Create a new item using the next item id.
+      item_id = next_item_id;
+      next_item_id += 2;
+      ItemInstance i = all_items[item_id];
+      i.owner = user;
+      i.locked = false;
+      i.item_id = item_id;
+      i.original_id = item_id;
+      i.defindex = defindex;
+      i.level = level;
+      i.quality = quality;
+      i.quantity = 0;
+      i.origin = origin;
+
+      // Place a reference to this item in the users backpack.
+      u.item_ids[u.num_items] = item_id;
+      i.bp_position = u.num_items;
+      u.num_items++;
+    } else {
+      item_id = 0;
+    }
   }
 
   // Imports an item from off chain with |original_id| for |user|.
@@ -147,6 +218,28 @@ contract BackpackSystem {
     all_items[item_id].locked = false;
   }
 
+  // Takes two item ids, assuming that the first is an item which has an
+  // associated recipee, and the second is an item that will be consumed in the
+  // process. We check to make sure the owner of each item is the sender first.
+  // We then unlock each item, and then 
+  //
+  // TODO: Once we have arrays, we should turn this hard coded two item version
+  // into a 200 slot version based on a per-user scratch space.
+  function ExecuteItemRecipee(uint64 first_item_id, uint64 second_item_id) {
+    if (IsInvalidUserActionForItem(first_item_id)) return;
+    if (IsInvalidUserActionForItem(second_item_id)) return;
+
+    all_items[first_item_id].locked = false;
+    all_items[second_item_id].locked = false;
+
+    // TODO: Look this up on the schema for |first_item_id|.
+    recipee.ExecuteRecipee(first_item_id, second_item_id);
+
+    // TODO: Tie locking/unlocking to the 200 slots and have a general relock
+    // area command here. For now, we just assume that everything passed in is
+    // consumed.
+  }
+
   // Destroys an item. Can only be initiated by the item owner.
   function DestroyItem(uint64 item_id) {
     if (IsInvalidUserActionForItem(item_id)) return;
@@ -166,6 +259,10 @@ contract BackpackSystem {
     }
 
     u.num_items--;
+  }
+
+  function GetItemDefindex(uint64 item_id) returns (uint32 defindex) {
+    return all_items[item_id].defindex;
   }
 
   // Checks if this is part of a transaction initiated by the owner.
