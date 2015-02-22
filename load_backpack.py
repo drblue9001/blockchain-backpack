@@ -224,35 +224,8 @@ while len(many_attribute_items):
       three_attribute['value'])
 
   while len(attributes):
-    # 6 is the maximum number of attributes we can cram in a message.
-    if len(attributes) >= 6:
-      one_attr = attributes.pop()
-      two_attr = attributes.pop()
-      three_attr = attributes.pop()
-      four_attr = attributes.pop()
-      five_attr = attributes.pop()
-      six_attr = attributes.pop()
-
-      print (" - Setting properties {'%s' to '%s', '%s' to '%s', '%s' to '%s'"
-             ", '%s' to '%s', '%s' to '%s', '%s' to '%s'}"
-             % (one_attr['name'], one_attr['value'],
-                two_attr['name'], two_attr['value'],
-                three_attr['name'], three_attr['value'],
-                four_attr['name'], four_attr['value'],
-                five_attr['name'], five_attr['value'],
-                six_attr['name'], six_attr['value']))
-      c.Add6AttributesToUnlockedItem(contract_item_id,
-                                     one_attr['defindex'], one_attr['value'],
-                                     two_attr['defindex'], two_attr['value'],
-                                     three_attr['defindex'],
-                                     three_attr['value'],
-                                     four_attr['defindex'],
-                                     four_attr['value'],
-                                     five_attr['defindex'],
-                                     five_attr['value'],
-                                     six_attr['defindex'],
-                                     six_attr['value'])
-    elif len(attributes) >= 5:
+    # 5 is the maximum number of attributes we can cram in a message.
+    if len(attributes) >= 5:
       one_attr = attributes.pop()
       two_attr = attributes.pop()
       three_attr = attributes.pop()

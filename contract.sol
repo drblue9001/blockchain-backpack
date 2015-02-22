@@ -87,12 +87,6 @@ contract BackpackSystem {
       u.backpack_capacity += 100;
   }
 
-  // Imports an item from off chain. Also locks the item.
-  function QuickImportItem(address user, uint64 original_id, uint32 defindex,
-                           uint16 level, uint16 quality, uint16 origin) {
-    uint64 item_id = StartFullImportItem(user, original_id, defindex, level,
-                                         quality, origin);
-    LockItem(item_id);
   }
 
   // Imports an item from off chain with |original_id| for |user|.
@@ -189,6 +183,14 @@ contract BackpackSystem {
 // This contract should only contain methods which combine multiple operations
 // above into one method call to minimize gas price.
 contract BackpackSystemWithConvenienceMethods is BackpackSystem {
+  // Imports an item from off chain. Also locks the item.
+  function QuickImportItem(address user, uint64 original_id, uint32 defindex,
+                           uint16 level, uint16 quality, uint16 origin) {
+    uint64 item_id = StartFullImportItem(user, original_id, defindex, level,
+                                         quality, origin);
+    LockItem(item_id);
+  }
+
   function QuickImport2Items(address user,
                              uint64 one_original_id, uint32 one_defindex,
                              uint16 one_level, uint16 one_quality,
@@ -333,31 +335,6 @@ contract BackpackSystemWithConvenienceMethods is BackpackSystem {
       all_items[item_id].int_attributes[three_attribute_id] = three_value;
       all_items[item_id].int_attributes[four_attribute_id] = four_value;
       all_items[item_id].int_attributes[five_attribute_id] = five_value;
-    }
-  }
-
-  function Add6AttributesToUnlockedItem(uint64 item_id,
-                                        uint32 one_attribute_id,
-                                        uint64 one_value,
-                                        uint32 two_attribute_id,
-                                        uint64 two_value,
-                                        uint32 three_attribute_id,
-                                        uint64 three_value,
-                                        uint32 four_attribute_id,
-                                        uint64 four_value,
-                                        uint32 five_attribute_id,
-                                        uint64 five_value,
-                                        uint32 six_attribute_id,
-                                        uint64 six_value) {
-    // TODO: Proper permissions here?
-    if (all_items[item_id].locked == false) {
-      // TODO: Need arrays to make the following iterable.
-      all_items[item_id].int_attributes[one_attribute_id] = one_value;
-      all_items[item_id].int_attributes[two_attribute_id] = two_value;
-      all_items[item_id].int_attributes[three_attribute_id] = three_value;
-      all_items[item_id].int_attributes[four_attribute_id] = four_value;
-      all_items[item_id].int_attributes[five_attribute_id] = five_value;
-      all_items[item_id].int_attributes[six_attribute_id] = six_value;
     }
   }
 }
