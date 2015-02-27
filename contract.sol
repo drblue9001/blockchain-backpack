@@ -1,4 +1,3 @@
-
 // An abstract recipee.
 //
 // TODO: This currently hard codes the idea of a single item as the argument
@@ -6,26 +5,6 @@
 contract Recipee {
   function ExecuteRecipee(uint64 first_item_id,
                           uint64 second_item_id) returns (bool success) { }
-}
-
-contract SupplyCrateThree is Recipee {
-  function ExecuteRecipee(uint64 this_item_id,
-                          uint64 key_item_id) returns (bool success) {
-    BackpackSystem backpack = BackpackSystem(msg.sender);
-
-    // Make sure that the items are what they claim to be.
-    if (backpack.GetItemDefindex(this_item_id) != 5045) return;
-    if (backpack.GetItemDefindex(key_item_id) != 5021) return;
-
-    // Why delete the previous items before granting the new item? Because
-    // let's say that the users backpack is full at the time they execute the
-    // recipee. We delete the previous two items to make room.
-    backpack.DestroyItem(this_item_id);
-    backpack.DestroyItem(key_item_id);
-
-    // For now, we just hard grant "A Distinctive Lack of Hue"
-    backpack.GrantNewItem(tx.origin, 5040, 5, 8);
-  }
 }
 
 // Our simplified item system.
@@ -52,6 +31,19 @@ contract BackpackSystem {
 
   function GetItemID(address user, uint16 position) returns (uint64 id) {
     return user_backpacks[user].item_ids[position];
+  }
+
+  // An item schema.
+  //
+  // You can think of SchemaItems as classes to ItemInstances as objects. This
+  // contains information about every object in TF2. In addition to the normal
+  // data that goes here from the TF2 files, we also have our system of
+  // contract recipees.
+  struct SchemaItem {
+    uint8 min_level;
+    uint8 max_level;
+    Recipee action_recipee;
+    string32 name;
   }
 
   // An individual item.
@@ -102,9 +94,7 @@ contract BackpackSystem {
   uint64 next_item_id;
   mapping (uint64 => ItemInstance) all_items;
   mapping (address => User) user_backpacks;
-
-  // TODO: Figure out why function locals don't work here.
-  SupplyCrateThree recipee;
+  mapping (uint32 => SchemaItem) item_schemas;
 
   function BackpackSystem() {
     owner = msg.sender;
@@ -112,7 +102,6 @@ contract BackpackSystem {
     // say that the item ids are all off chain until item 4000000000, then all
     // even numbers are on chain, and all odd numbers are off chain.
     next_item_id = 4000000000;
-    recipee = new SupplyCrateThree();
   }
 
   function CreateUser(address user) {
@@ -232,8 +221,10 @@ contract BackpackSystem {
     all_items[first_item_id].locked = false;
     all_items[second_item_id].locked = false;
 
-    // TODO: Look this up on the schema for |first_item_id|.
-    recipee.ExecuteRecipee(first_item_id, second_item_id);
+    // Look up and execute the recipee contract from the first item's defindex.
+    uint32 crate_defindex = all_items[first_item_id].defindex;
+    Recipee r = item_schemas[crate_defindex].action_recipee;
+    r.ExecuteRecipee(first_item_id, second_item_id);
 
     // TODO: Tie locking/unlocking to the 200 slots and have a general relock
     // area command here. For now, we just assume that everything passed in is
@@ -274,6 +265,15 @@ contract BackpackSystem {
     } else {
       invalid = false;
     }
+  }
+
+  function SetItemSchema(uint32 defindex, uint8 min_level, uint8 max_level,
+                         address action_recipee, string32 name) {
+    SchemaItem schema = item_schemas[defindex];
+    schema.min_level = min_level;
+    schema.max_level = max_level;
+    schema.action_recipee = Recipee(action_recipee);
+    schema.name = name;
   }
 }
 
