@@ -63,6 +63,8 @@ contract BackpackSystem {
   // able to then modify it. (If this is an important property, we could add
   // a redirection table, though.)
   struct ItemInstance {
+    // TODO: Instead of having this be a binary, have this be an address that
+    // the owner can set.
     bool locked;
 
     // This item's current owner.
@@ -75,7 +77,7 @@ contract BackpackSystem {
     uint64 item_id;
     uint64 original_id;
     uint32 defindex;
-    uint16 level;
+    uint8 level;
     uint16 quality;
     uint16 quantity;
     uint16 origin;
@@ -118,11 +120,20 @@ contract BackpackSystem {
       u.backpack_capacity += 100;
   }
 
-  // Creates an unlocked item
+  // Creates an unlocked item.
   function GrantNewItem(address user, uint32 defindex, uint16 quality,
                         uint16 origin) returns (uint64 item_id) {
     // TODO: Check a list of contracts that may grant items.
-    uint16 level = 5; // TODO: Calculate this from defindex.
+
+    SchemaItem schema = item_schemas[defindex];
+    uint8 level = schema.min_level;
+    if (schema.min_level != schema.max_level) {
+      // The level doesn't need cryptographic randomness here. Just use the
+      // prevhash.
+      uint8 count = schema.max_level - schema.min_level;
+      // This doesn't work. It just is always 0.
+      level = uint8(uint256(block.blockhash(1)) % count) + schema.min_level;
+    }
 
     User u = user_backpacks[user];
     if (u.backpack_capacity > 0 && u.num_items < u.backpack_capacity) {
@@ -151,7 +162,7 @@ contract BackpackSystem {
 
   // Imports an item from off chain with |original_id| for |user|.
   function StartFullImportItem(address user, uint64 original_id,
-                               uint32 defindex, uint16 level,
+                               uint32 defindex, uint8 level,
                                uint16 quality, uint16 origin)
            returns (uint64 item_id) {
     User u = user_backpacks[user];
@@ -256,6 +267,10 @@ contract BackpackSystem {
     return all_items[item_id].defindex;
   }
 
+  function GetItemLevel(uint64 item_id) returns (uint8 level) {
+    return all_items[item_id].level;
+  }
+
   // Checks if this is part of a transaction initiated by the owner.
   function IsInvalidUserActionForItem(uint64 item_id) private constant
       returns(bool invalid) {
@@ -282,7 +297,7 @@ contract BackpackSystem {
 contract BackpackSystemWithConvenienceMethods is BackpackSystem {
   // Imports an item from off chain. Also locks the item.
   function QuickImportItem(address user, uint64 original_id, uint32 defindex,
-                           uint16 level, uint16 quality, uint16 origin) {
+                           uint8 level, uint16 quality, uint16 origin) {
     uint64 item_id = StartFullImportItem(user, original_id, defindex, level,
                                          quality, origin);
     LockItem(item_id);
@@ -290,10 +305,10 @@ contract BackpackSystemWithConvenienceMethods is BackpackSystem {
 
   function QuickImport2Items(address user,
                              uint64 one_original_id, uint32 one_defindex,
-                             uint16 one_level, uint16 one_quality,
+                             uint8 one_level, uint16 one_quality,
                              uint16 one_origin,
                              uint64 two_original_id, uint32 two_defindex,
-                             uint16 two_level, uint16 two_quality,
+                             uint8 two_level, uint16 two_quality,
                              uint16 two_origin) {
     uint64 item_id = StartFullImportItem(user, one_original_id, one_defindex,
                                          one_level, one_quality, one_origin);
@@ -305,7 +320,7 @@ contract BackpackSystemWithConvenienceMethods is BackpackSystem {
   }
 
   function QuickImportItemWith1Attribute(address user, uint64 original_id,
-                                         uint32 defindex, uint16 level,
+                                         uint32 defindex, uint8 level,
                                          uint16 quality, uint16 origin,
                                          uint32 attribute_id,
                                          uint64 attribute_value) {
@@ -316,7 +331,7 @@ contract BackpackSystemWithConvenienceMethods is BackpackSystem {
   }
 
   function QuickImportItemWith2Attributes(address user, uint64 original_id,
-                                          uint32 defindex, uint16 level,
+                                          uint32 defindex, uint8 level,
                                           uint16 quality, uint16 origin,
                                           uint32 one_attribute_id,
                                           uint64 one_attribute_value,
@@ -330,7 +345,7 @@ contract BackpackSystemWithConvenienceMethods is BackpackSystem {
   }
 
   function QuickImportItemWith3Attributes(address user, uint64 original_id,
-                                          uint32 defindex, uint16 level,
+                                          uint32 defindex, uint8 level,
                                           uint16 quality, uint16 origin,
                                           uint32 one_attribute_id,
                                           uint64 one_attribute_value,
@@ -348,7 +363,7 @@ contract BackpackSystemWithConvenienceMethods is BackpackSystem {
   }
 
   function StartFullImportItemWith3Attributes(address user, uint64 original_id,
-                                              uint32 defindex, uint16 level,
+                                              uint32 defindex, uint8 level,
                                               uint16 quality, uint16 origin,
                                               uint32 one_attribute_id,
                                               uint64 one_attribute_value,
