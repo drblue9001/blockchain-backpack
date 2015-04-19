@@ -65,7 +65,10 @@ contract BackpackSystem {
 
   function HasPermission(address user, Permissions permission)
       constant returns (bool value) {
-    value = (user == owner) || user_data[user].permissions[uint(permission)];
+    if (uint(permission) >= 5)
+      value = false;
+    else
+      value = (user == owner) || user_data[user].permissions[uint(permission)];
   }
 
   function SetAllowItemsReceived(bool value) {
