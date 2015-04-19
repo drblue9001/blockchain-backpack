@@ -26,13 +26,13 @@ contract ExtensionContract {
 // message should go into BackpackSystemWithConvenienceMethods, which exists
 // for those sorts of non-principled operations.
 contract BackpackSystem {
-  enum Permissions {
-    SetPermission,
-    BackpackCapacity,
-    ModifySchema,
-    ItemGrant,
-    UnlockedItemModify
-  }
+  // TODO: In some far future where enums work in pyethereum, switch these to
+  // enums.
+  uint8 constant kPermissionSetPermission = 0;
+  uint8 constant kPermissionBackpackCapacity = 1;
+  uint8 constant kPermissionModifySchema = 2;
+  uint8 constant kPermissionItemGrant = 3;
+  uint8 constant kPermissionUnlockedItemModify = 4;
 
   uint constant kNumPermissions = 5;
 
@@ -58,17 +58,22 @@ contract BackpackSystem {
     uint64[1800] item_ids;
   }
 
-  function SetPermission(address user, Permissions permission, bool value) {
-    if (HasPermission(msg.sender, Permissions.SetPermission))
-      user_data[user].permissions[uint(permission)] = true;
+  function SetPermission(address user, uint8 permission, bool value) {
+    if (HasPermission(msg.sender, kPermissionSetPermission))
+      user_data[user].permissions[permission] = true;
   }
 
-  function HasPermission(address user, Permissions permission)
+  function ReturnTrue(address user, uint8 permission)
       constant returns (bool value) {
-    if (uint(permission) >= 5)
-      value = false;
+    return true;
+  }
+
+  function HasPermission(address user, uint8 permission)
+      constant returns (bool value) {
+    if (permission >= 5)
+      return false;
     else
-      value = (user == owner) || user_data[user].permissions[uint(permission)];
+      return (user == owner) || user_data[user].permissions[permission];
   }
 
   function SetAllowItemsReceived(bool value) {
@@ -101,7 +106,7 @@ contract BackpackSystem {
   function SetItemSchema(uint32 defindex, uint8 min_level, uint8 max_level,
                          address action_recipee, bytes32 name)
       returns (bytes32 ret) {
-    if (!HasPermission(msg.sender, Permissions.ModifySchema))
+    if (!HasPermission(msg.sender, kPermissionModifySchema))
       return "Permission Denied";
 
     SchemaItem schema = item_schemas[defindex];
@@ -186,7 +191,7 @@ contract BackpackSystem {
   }
 
   function CreateUser(address user) {
-    if (!HasPermission(msg.sender, Permissions.BackpackCapacity)) return;
+    if (!HasPermission(msg.sender, kPermissionBackpackCapacity)) return;
 
     User u = user_data[user];
     if (u.backpack_capacity == 0)
@@ -194,7 +199,7 @@ contract BackpackSystem {
   }
 
   function AddBackpackSpaceForUser(address user) {
-    if (!HasPermission(msg.sender, Permissions.BackpackCapacity)) return;
+    if (!HasPermission(msg.sender, kPermissionBackpackCapacity)) return;
 
     User u = user_data[user];
     if (u.backpack_capacity > 0 && u.backpack_capacity < 1800) {
@@ -288,7 +293,7 @@ contract BackpackSystem {
                            uint64 value) returns (bool success) {
     ItemInstance item = all_items[item_id];
     if (item.unlocked_for == msg.sender &&
-        HasPermission(msg.sender, Permissions.UnlockedItemModify)) {
+        HasPermission(msg.sender, kPermissionUnlockedItemModify)) {
       uint256 i = 0;
       while (i < kNumIntAttributes &&
              item.int_attribute_key[i] != 0) {
@@ -347,7 +352,7 @@ contract BackpackSystem {
   // Creates an unlocked item.
   function GrantNewItem(address user, uint32 defindex, uint16 quality,
                         uint16 origin) returns (uint64 item_id) {
-    if (!HasPermission(msg.sender, Permissions.ItemGrant)) return;
+    if (!HasPermission(msg.sender, kPermissionItemGrant)) return;
 
     SchemaItem schema = item_schemas[defindex];
     uint8 level = schema.min_level;
