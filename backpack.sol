@@ -58,27 +58,33 @@ contract BackpackSystem {
     uint64[1800] item_ids;
   }
 
-  function SetPermission(address user, uint8 permission, bool value) {
-    if (HasPermission(msg.sender, kPermissionSetPermission))
-      user_data[user].permissions[permission] = true;
-  }
-
-  function ReturnTrue(address user, uint8 permission)
-      constant returns (bool value) {
-    return true;
+  function SetPermission(address user, uint8 permission, bool value)
+      constant returns (bytes32 message) {
+    if (HasPermission(msg.sender, kPermissionSetPermission)) {
+      user_data[user].permissions[permission] = value;
+      return "OK";
+    } else {
+      return "Permission Denied";
+    }
   }
 
   function HasPermission(address user, uint8 permission)
       constant returns (bool value) {
     if (permission >= 5)
       return false;
+    else if (user == owner)
+      return true;
     else
-      return (user == owner) || user_data[user].permissions[permission];
+      return user_data[user].permissions[permission];
   }
 
   function SetAllowItemsReceived(bool value) {
     if (user_data[msg.sender].backpack_capacity > 0)
       user_data[msg.sender].allow_items_received = value;
+  }
+
+  function AllowsItemsReceived(address user) constant returns (bool value) {
+    return user_data[user].allow_items_received;
   }
 
   function GetNumItems(address user) constant returns (uint16 count) {
@@ -176,10 +182,10 @@ contract BackpackSystem {
   // All items definitions are owned by the BackpackSystem.
   address private owner;
   uint64 private next_item_id;
-  mapping (uint64 => ItemInstance) private all_items;
-  mapping (address => User) private user_data;
-  mapping (uint32 => SchemaItem) private item_schemas;
-  mapping (bytes32 => address) private extension_contracts;
+  mapping (uint64 => ItemInstance) all_items;
+  mapping (address => User) user_data;
+  mapping (uint32 => SchemaItem) item_schemas;
+  mapping (bytes32 => address) extension_contracts;
 
   function BackpackSystem() {
     owner = msg.sender;
@@ -190,12 +196,18 @@ contract BackpackSystem {
     next_item_id = 4000000000;
   }
 
-  function CreateUser(address user) {
-    if (!HasPermission(msg.sender, kPermissionBackpackCapacity)) return;
+  function CreateUser(address user) returns (bytes32 message) {
+    if (!HasPermission(msg.sender, kPermissionBackpackCapacity))
+      return "Permission Denied";
 
     User u = user_data[user];
-    if (u.backpack_capacity == 0)
+    if (u.backpack_capacity == 0) {
+      u.allow_items_received = true;
       u.backpack_capacity = 300;
+      return "OK";
+    }
+
+    return "User already exists";
   }
 
   function AddBackpackSpaceForUser(address user) {
@@ -203,7 +215,6 @@ contract BackpackSystem {
 
     User u = user_data[user];
     if (u.backpack_capacity > 0 && u.backpack_capacity < 1800) {
-      u.allow_items_received = true;
       u.backpack_capacity += 100;
     }
   }
@@ -245,6 +256,7 @@ contract BackpackSystem {
     }
   }
 
+  // TODO(drblue): We should have a redirect table here.
   function GiveItemTo(uint64 item_id, address recipient) {
     ItemInstance old_item = all_items[item_id];
     if (old_item.owner == msg.sender || old_item.unlocked_for == msg.sender) {
@@ -332,13 +344,12 @@ contract BackpackSystem {
   // ------------------------------------------------------------------------
 
   // Execute an extension.
-  //
-  // We implicitly unlock and lock items; we don't
   function Exec(bytes32 name, uint64 item_id)
       returns (bytes32 message) {
     ItemInstance item = all_items[item_id];
     if (item.owner == msg.sender || item.unlocked_for == msg.sender) {
       ExtensionContract c = ExtensionContract(extension_contracts[name]);
+      // TODO(drblue): You can't just implicitly unlock safely here.
       address previously_unlocked_for = item.unlocked_for;
       item.unlocked_for = c;
       message = c.ExtensionFunction(name, item_id);
