@@ -177,6 +177,19 @@ contract BackpackSystem {
     max = schema.max_level;
   }
 
+  function AddIntAttributeToItemSchema(uint32 item_defindex,
+                                       uint32 attribute_defindex,
+                                       uint64 value) returns (bytes32) {
+    if (!HasPermission(msg.sender, Permissions.ModifySchema))
+      return "Permission Denied";
+    if (all_attributes[attribute_defindex].defindex == 0)
+      return "Invalid Attribute";
+
+    SchemaItem schema = item_schemas[item_defindex];
+    schema.int_attributes[attribute_defindex] = value;
+    return "OK";
+  }
+
   function BackpackSystem() {
     owner = msg.sender;
   }

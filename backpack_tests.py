@@ -12,6 +12,7 @@ tester.gas_limit = 10000000;
 kOK = 'OK\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
 kPermissionDenied = 'Permission Denied\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
 kNullString = '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+kInvalidAttribute = 'Invalid Attribute\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
 
 fs = FileContractStore()
 
@@ -97,7 +98,7 @@ class AttributeTest(unittest.TestCase):
 
     def test_cant_set_zero(self):
         self.assertEquals(self.contract.SetAttribute(0, "Zero", "Emptiness is Loneliness"),
-                          'Invalid Attribute\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00');
+                          kInvalidAttribute);
         self.assertEquals(self.contract.GetAttribute(0, "Zero"), kNullString);
 
     def test_can_set_property(self):
@@ -120,6 +121,20 @@ class SchemaTest(unittest.TestCase):
     def test_schema_set_and_get_level(self):
         self.assertEquals(self.contract.SetItemSchema(18, 5, 25, 0), kOK);
         self.assertEquals(self.contract.GetItemLevelRange(18), [5, 25]);
+
+    def test_cant_add_invalid_attribute(self):
+        self.assertEquals(self.contract.SetItemSchema(18, 5, 25, 0), kOK);
+        self.assertEquals(self.contract.AddIntAttributeToItemSchema(18, 6, 15),
+                          kInvalidAttribute);
+
+    def test_can_add_valid_attribute(self):
+        # Build attribute '388', "kill eater kill type"
+        self.assertEquals(self.contract.SetAttribute(388, "name", "kill eater kill type"), kOK);
+        self.assertEquals(self.contract.SetAttribute(388, "attribute_class", "kill_eater_kill_type"), kOK);
+
+        # Add the attribute to "Sleeveless in Siberia" (30556).
+        self.assertEquals(self.contract.SetItemSchema(30556, 1, 100, 0), kOK);
+        self.assertEquals(self.contract.AddIntAttributeToItemSchema(30556, 388, 64), kOK);
 
 if __name__ == '__main__':
     unittest.main()
