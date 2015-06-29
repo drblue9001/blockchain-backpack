@@ -91,14 +91,35 @@ class AttributeTest(unittest.TestCase):
                                                  state=self.t)
         self.t.mine()
 
+    def test_modify_schema_permission(self):
+        self.assertEquals(self.contract.SetAttribute(1, "Two", "Three", sender=tester.k1),
+                          kPermissionDenied);
+
     def test_cant_set_zero(self):
-        self.contract.SetAttribute(0, "Zero", "Emptiness is Loneliness");
+        self.assertEquals(self.contract.SetAttribute(0, "Zero", "Emptiness is Loneliness"),
+                          'Invalid Attribute\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00');
         self.assertEquals(self.contract.GetAttribute(0, "Zero"), kNullString);
 
     def test_can_set_property(self):
-        self.contract.SetAttribute(1, "One", "1");
+        self.assertEquals(self.contract.SetAttribute(1, "One", "1"), kOK);
         self.assertEquals(self.contract.GetAttribute(1, "One"),
                           '1\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00');
+
+class SchemaTest(unittest.TestCase):
+    def setUp(self):
+        self.t = tester.state()
+        self.t.mine()
+        self.contract = fs.BackpackSystem.create(sender=tester.k0,
+                                                 state=self.t)
+        self.t.mine()
+
+    def test_schema_permission(self):
+        self.assertEquals(self.contract.SetItemSchema(18, 5, 25, 0, sender=tester.k1),
+                          kPermissionDenied);
+
+    def test_schema_set_and_get_level(self):
+        self.assertEquals(self.contract.SetItemSchema(18, 5, 25, 0), kOK);
+        self.assertEquals(self.contract.GetItemLevelRange(18), [5, 25]);
 
 if __name__ == '__main__':
     unittest.main()

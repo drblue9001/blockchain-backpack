@@ -1,3 +1,10 @@
+
+// An extension contract which takes a list of item ids and 
+contract MutatingExtensionContract {
+  function ExtensionFunction(bytes32 name, uint64[] item_id)
+      external returns (bytes32 message);
+}
+
 // Version 3 of the backpack system. This tries to make the cost of trading not
 // depend on the number of attributes on an item.
 contract BackpackSystem {
@@ -109,28 +116,65 @@ contract BackpackSystem {
     bool modifiable;
   }
 
-  function SetAttribute(uint32 defindex, bytes32 name, bytes32 value) {
-    if (defindex == 0) {
-      // We want 0 to be a magic uninitialized value.
-      return;
-    }
+  function SetAttribute(uint32 defindex, bytes32 name, bytes32 value)
+      returns (bytes32) {
+    if (!HasPermission(msg.sender, Permissions.ModifySchema))
+      return "Permission Denied";
+    if (defindex == 0)
+      return "Invalid Attribute";
     if (all_attributes[defindex].defindex == 0)
       all_attributes[defindex].defindex = defindex;
     all_attributes[defindex].attribute_data[name] = value;
+    return "OK";
   }
 
-  function SetAttributeModifiable(uint32 defindex, bool modifiable) {
-    if (defindex == 0) {
-      // We want 0 to be a magic uninitialized value.
-      return;
-    }
+  function SetAttributeModifiable(uint32 defindex, bool modifiable)
+      returns (bytes32) {
+    if (!HasPermission(msg.sender, Permissions.ModifySchema))
+      return "Permission Denied";
+    if (defindex == 0)
+      return "Invalid Attribute";
     if (all_attributes[defindex].defindex == 0)
       all_attributes[defindex].defindex = defindex;
     all_attributes[defindex].modifiable = modifiable;
+    return "OK";
   }
 
   function GetAttribute(uint32 defindex, bytes32 name) returns (bytes32) {
     return all_attributes[defindex].attribute_data[name];
+  }
+
+  // --------------------------------------------------------------------------
+  // Part 3: Schema Items
+  //
+  // SchemaItem defines the shared characteristics of a group of items. You can
+  // think of SchemaItems as classes to ItemInstance's objects.
+  struct SchemaItem {
+    uint8 min_level;
+    uint8 max_level;
+    MutatingExtensionContract recipee;
+
+    mapping (uint32 => bytes32) str_attributes;
+    mapping (uint32 => uint64) int_attributes;
+  }
+
+  function SetItemSchema(uint32 defindex, uint8 min_level, uint8 max_level,
+                         address action_recipee)
+      returns (bytes32 ret) {
+    if (!HasPermission(msg.sender, Permissions.ModifySchema))
+      return "Permission Denied";
+
+    SchemaItem schema = item_schemas[defindex];
+    schema.min_level = min_level;
+    schema.max_level = max_level;
+    schema.recipee = MutatingExtensionContract(action_recipee);
+    return "OK";
+  }
+
+  function GetItemLevelRange(uint32 defindex) returns (uint8 min, uint8 max) {
+    SchemaItem schema = item_schemas[defindex];
+    min = schema.min_level;
+    max = schema.max_level;
   }
 
   function BackpackSystem() {
@@ -140,4 +184,5 @@ contract BackpackSystem {
   address private owner;
   mapping (address => User) private user_data;
   mapping (uint32 => AttributeDefinition) private all_attributes;
+  mapping (uint32 => SchemaItem) item_schemas;
 }
