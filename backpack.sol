@@ -15,7 +15,7 @@ contract UnlockedItemHandler {
 }
 
 contract ExtensionContract {
-  function ExtensionFunction(bytes32 name, uint64 item_id)
+  function ExtensionFunction(bytes32 name, uint64[] item_id)
       returns (bytes32 message) {}
 }
 
@@ -58,27 +58,42 @@ contract BackpackSystem {
     uint64[1800] item_ids;
   }
 
-  function SetPermission(address user, uint8 permission, bool value) {
-    if (HasPermission(msg.sender, kPermissionSetPermission))
-      user_data[user].permissions[permission] = true;
+  bool[5] array_of_bools;
+  function GetBoolNum(uint8 i) constant returns (bool value) {
+    return array_of_bools[i];
   }
 
-  function ReturnTrue(address user, uint8 permission)
-      constant returns (bool value) {
-    return true;
+  function SetBoolNum(uint8 i, bool value) {
+    array_of_bools[i] = value;
+  }
+
+  function SetPermission(address user, uint8 permission, bool value)
+      constant returns (bytes32 message) {
+    if (HasPermission(msg.sender, kPermissionSetPermission)) {
+      user_data[user].permissions[permission] = value;
+      return "OK";
+    } else {
+      return "Permission Denied";
+    }
   }
 
   function HasPermission(address user, uint8 permission)
       constant returns (bool value) {
     if (permission >= 5)
       return false;
+    else if (user == owner)
+      return true;
     else
-      return (user == owner) || user_data[user].permissions[permission];
+      return user_data[user].permissions[permission];
   }
 
   function SetAllowItemsReceived(bool value) {
     if (user_data[msg.sender].backpack_capacity > 0)
       user_data[msg.sender].allow_items_received = value;
+  }
+
+  function AllowsItemsReceived(address user) constant returns (bool value) {
+    return user_data[user].allow_items_received;
   }
 
   function GetNumItems(address user) constant returns (uint16 count) {
@@ -176,10 +191,10 @@ contract BackpackSystem {
   // All items definitions are owned by the BackpackSystem.
   address private owner;
   uint64 private next_item_id;
-  mapping (uint64 => ItemInstance) private all_items;
-  mapping (address => User) private user_data;
-  mapping (uint32 => SchemaItem) private item_schemas;
-  mapping (bytes32 => address) private extension_contracts;
+  mapping (uint64 => ItemInstance) all_items;
+  mapping (address => User) user_data;
+  mapping (uint32 => SchemaItem) item_schemas;
+  mapping (bytes32 => address) extension_contracts;
 
   function BackpackSystem() {
     owner = msg.sender;
@@ -190,12 +205,18 @@ contract BackpackSystem {
     next_item_id = 4000000000;
   }
 
-  function CreateUser(address user) {
-    if (!HasPermission(msg.sender, kPermissionBackpackCapacity)) return;
+  function CreateUser(address user) returns (bytes32 message) {
+    if (!HasPermission(msg.sender, kPermissionBackpackCapacity))
+      return "Permission Denied";
 
     User u = user_data[user];
-    if (u.backpack_capacity == 0)
+    if (u.backpack_capacity == 0) {
+      u.allow_items_received = true;
       u.backpack_capacity = 300;
+      return "OK";
+    }
+
+    return "User already exists";
   }
 
   function AddBackpackSpaceForUser(address user) {
@@ -203,7 +224,6 @@ contract BackpackSystem {
 
     User u = user_data[user];
     if (u.backpack_capacity > 0 && u.backpack_capacity < 1800) {
-      u.allow_items_received = true;
       u.backpack_capacity += 100;
     }
   }
@@ -220,15 +240,22 @@ contract BackpackSystem {
       // for |unlocked_for|, this will still send an OnItemUnlocked(), which
       // will be immediately relocked.)
       if (i.unlocked_for != 0) {
-        address previous_locked_for = i.unlocked_for;
-        i.unlocked_for = 0;
-        UnlockedItemHandler(previous_locked_for).OnItemLocked(this, item_id);
+        LockItemImpl(item_id);
       }
 
       i.unlocked_for = unlocked_for;
 
       UnlockedItemHandler(i.unlocked_for).OnItemUnlocked(this, item_id);
     }
+  }
+
+  // Private impl which locks an item without doing permission checking.
+  function LockItemImpl(uint64 item_id) private
+      returns(address previous_locked_for) {
+    ItemInstance i = all_items[item_id];
+    previous_locked_for = i.unlocked_for;
+    i.unlocked_for = 0;
+    UnlockedItemHandler(previous_locked_for).OnItemLocked(this, item_id);
   }
 
   // Locks the item again.
@@ -239,9 +266,7 @@ contract BackpackSystem {
       if (msg.sender != i.owner && msg.sender != i.unlocked_for)
         return;
 
-      address previous_locked_for = i.unlocked_for;
-      i.unlocked_for = 0;
-      UnlockedItemHandler(previous_locked_for).OnItemLocked(this, item_id);
+      LockItemImpl(item_id);
     }
   }
 
@@ -339,10 +364,16 @@ contract BackpackSystem {
     ItemInstance item = all_items[item_id];
     if (item.owner == msg.sender || item.unlocked_for == msg.sender) {
       ExtensionContract c = ExtensionContract(extension_contracts[name]);
-      address previously_unlocked_for = item.unlocked_for;
-      item.unlocked_for = c;
+      // We might need to lock the item; if it is currently unlocked for a
+      // contract, we might end up modifying the item, which might change
+      // semantics.
+      address previously_unlocked_for = 0;
+      if (item.unlocked_for != 0)
+        LockItemImpl(item_id);
+      UnlockItemImpl(item_id, c);
       message = c.ExtensionFunction(name, item_id);
-      item.unlocked_for = previously_unlocked_for;
+      if (previously_unlocked_for != 0)
+        UnlockItemImpl(item_id, previously_unlocked_for);
       return message;
     } else {
       return "";
