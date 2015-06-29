@@ -9,13 +9,17 @@ from ethertdd import FileContractStore
 # Up the gas limit because our contract is pretty huge.
 tester.gas_limit = 10000000;
 
+kOK = 'OK\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+kPermissionDenied = 'Permission Denied\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+
+fs = FileContractStore()
+
 class PermissionsTest(unittest.TestCase):
     def setUp(self):
         self.t = tester.state()
         self.t.mine()
-        self.fs = FileContractStore()
-        self.contract = self.fs.BackpackSystem.create(sender=tester.k0,
-                                                      state=self.t)
+        self.contract = fs.BackpackSystem.create(sender=tester.k0,
+                                                 state=self.t)
         self.t.mine()
 
     def test_creator_has_all_permissions(self):
@@ -27,6 +31,33 @@ class PermissionsTest(unittest.TestCase):
     def test_other_contact_has_no_permissions_by_default(self):
         for i in [0, 1, 2, 3, 4, 5, 6, 142]:
             self.assertFalse(self.contract.HasPermission(tester.a1, i))
+
+    def test_other_contract_gets_a_permission(self):
+        # Starts without the permission.
+        self.assertFalse(self.contract.HasPermission(tester.a1, 4));
+
+        # Can't take a permission by itself (kPermissionUnlockedItemModify).
+        self.assertEquals(
+            self.contract.SetPermission(tester.a1, 4, True, sender=tester.k1),
+            kPermissionDenied)
+        self.t.mine()
+        self.assertFalse(self.contract.HasPermission(tester.a1, 4))
+
+        # Gets the permission from the contract creater.
+        self.assertEquals(
+            self.contract.SetPermission(tester.a1, 4, True, sender=tester.k0),
+            kOK)
+        self.t.mine()
+        self.assertTrue(self.contract.HasPermission(tester.a1, 4))
+
+    def test_allow_items(self):
+        # Create a user
+        self.assertEquals(self.contract.CreateUser(tester.a1), kOK);
+        self.assertTrue(self.contract.AllowsItemsReceived(tester.a1));
+
+        # The user can turn off the ability to receive items.
+        self.contract.SetAllowItemsReceived(False, sender=tester.k1);
+        self.assertFalse(self.contract.AllowsItemsReceived(tester.a1));
 
 if __name__ == '__main__':
     unittest.main()

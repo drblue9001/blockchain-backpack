@@ -1,0 +1,89 @@
+* Backpack plan:
+*** The main backpack is a database contract.
+***** It keeps track of permissions. 
+***** It keeps track of items.
+***** It allows addresses that have the schema permission to change schema.
+***** It allows addressses that have the attribute permission to change attributes *on unlocked items*.
+***** It allows addresses that have the grant permission to grant items.
+***** It has a string to address interface to keep track of other contracts.
+*** Each item:
+***** A user can only give or delete an item; they can't modify it themselves.
+***** Can be unlocked for a specific contract. Unlocked items:
+******* Can be modified.
+******* Can be deleted.
+******* Can be given.
+***** Items have owners, but maybe not all owned items should be in a backpack?
+
+* Interesting Objects
+*** Unfilled Collector's Recipe:
+			{
+				"id": 3700114412,
+				"original_id": 2688042037,
+				"defindex": 20006,
+				"level": 5,
+				"quality": 6,
+				"inventory": 3221225492,
+				"quantity": 1,
+				"origin": 0,
+				"flag_cannot_trade": true,
+				"attributes": [
+					{
+						"defindex": 211,
+						"value": 1430033494,
+						"float_value": 12959080251392
+					},
+					{
+						"defindex": 2000,
+						"is_output": true,
+						"quantity": 1,
+						"itemdef": 354,
+						"quality": 14
+					},
+					{
+						"defindex": 2001,
+						"is_output": false,
+						"quantity": 200,
+						"itemdef": 354,
+						"quality": 6
+					}
+				]
+			},
+*** Partially filled Collector's Recipe:
+			{
+				"id": 3720568067,
+				"original_id": 2688042037,
+				"defindex": 20006,
+				"level": 5,
+				"quality": 6,
+				"inventory": 2147483663,
+				"quantity": 1,
+				"origin": 0,
+				"attributes": [
+					{
+						"defindex": 211,
+						"value": 1430033494,
+						"float_value": 12959080251392
+					},
+					{
+						"defindex": 2000,
+						"is_output": true,
+						"quantity": 1,
+						"itemdef": 354,
+						"quality": 14
+					},
+					{
+						"defindex": 2001,
+						"is_output": false,
+						"quantity": 128,
+						"itemdef": 354,
+						"quality": 6
+					}
+				]
+			}
+* Notes on Valve JSON
+*** Data is pre merged in webapi output:
+Interesting note: In the raw_tf2_bp.json, my items have the
+attributes specified in the individual items. (ie, an instance of
+"The Cozy Camper" has attribute 57 first, which is the defindex
+of the health regen effect "health regen", which is the first
+attribute in the schema.

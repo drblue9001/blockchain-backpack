@@ -15,7 +15,7 @@ contract UnlockedItemHandler {
 }
 
 contract ExtensionContract {
-  function ExtensionFunction(bytes32 name, uint64[] item_id)
+  function ExtensionFunction(bytes32 name, uint64 item_id)
       returns (bytes32 message) {}
 }
 
@@ -56,15 +56,6 @@ contract BackpackSystem {
     uint16 backpack_capacity;
     uint16 num_items;
     uint64[1800] item_ids;
-  }
-
-  bool[5] array_of_bools;
-  function GetBoolNum(uint8 i) constant returns (bool value) {
-    return array_of_bools[i];
-  }
-
-  function SetBoolNum(uint8 i, bool value) {
-    array_of_bools[i] = value;
   }
 
   function SetPermission(address user, uint8 permission, bool value)
@@ -240,22 +231,15 @@ contract BackpackSystem {
       // for |unlocked_for|, this will still send an OnItemUnlocked(), which
       // will be immediately relocked.)
       if (i.unlocked_for != 0) {
-        LockItemImpl(item_id);
+        address previous_locked_for = i.unlocked_for;
+        i.unlocked_for = 0;
+        UnlockedItemHandler(previous_locked_for).OnItemLocked(this, item_id);
       }
 
       i.unlocked_for = unlocked_for;
 
       UnlockedItemHandler(i.unlocked_for).OnItemUnlocked(this, item_id);
     }
-  }
-
-  // Private impl which locks an item without doing permission checking.
-  function LockItemImpl(uint64 item_id) private
-      returns(address previous_locked_for) {
-    ItemInstance i = all_items[item_id];
-    previous_locked_for = i.unlocked_for;
-    i.unlocked_for = 0;
-    UnlockedItemHandler(previous_locked_for).OnItemLocked(this, item_id);
   }
 
   // Locks the item again.
@@ -266,10 +250,13 @@ contract BackpackSystem {
       if (msg.sender != i.owner && msg.sender != i.unlocked_for)
         return;
 
-      LockItemImpl(item_id);
+      address previous_locked_for = i.unlocked_for;
+      i.unlocked_for = 0;
+      UnlockedItemHandler(previous_locked_for).OnItemLocked(this, item_id);
     }
   }
 
+  // TODO(drblue): We should have a redirect table here.
   function GiveItemTo(uint64 item_id, address recipient) {
     ItemInstance old_item = all_items[item_id];
     if (old_item.owner == msg.sender || old_item.unlocked_for == msg.sender) {
@@ -357,23 +344,16 @@ contract BackpackSystem {
   // ------------------------------------------------------------------------
 
   // Execute an extension.
-  //
-  // We implicitly unlock and lock items; we don't
   function Exec(bytes32 name, uint64 item_id)
       returns (bytes32 message) {
     ItemInstance item = all_items[item_id];
     if (item.owner == msg.sender || item.unlocked_for == msg.sender) {
       ExtensionContract c = ExtensionContract(extension_contracts[name]);
-      // We might need to lock the item; if it is currently unlocked for a
-      // contract, we might end up modifying the item, which might change
-      // semantics.
-      address previously_unlocked_for = 0;
-      if (item.unlocked_for != 0)
-        LockItemImpl(item_id);
-      UnlockItemImpl(item_id, c);
+      // TODO(drblue): You can't just implicitly unlock safely here.
+      address previously_unlocked_for = item.unlocked_for;
+      item.unlocked_for = c;
       message = c.ExtensionFunction(name, item_id);
-      if (previously_unlocked_for != 0)
-        UnlockItemImpl(item_id, previously_unlocked_for);
+      item.unlocked_for = previously_unlocked_for;
       return message;
     } else {
       return "";
