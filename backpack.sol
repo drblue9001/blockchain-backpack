@@ -12,13 +12,14 @@ contract BackpackSystem {
     BackpackCapacity,
     ModifySchema,
     GrantItems,
-    AddAttributesToItem
+    AddAttributesToItem,
+    ModifiableAttribute
   }
-  uint constant kNumPermissions = 5;
+  uint constant kNumPermissions = 6;
 
   struct User {
     // Admin permissions (all default to false).
-    bool[5] permissions;
+    bool[6] permissions;
 
     // Users might not want to receive items from other players.
     bool allow_items_received;
@@ -89,10 +90,54 @@ contract BackpackSystem {
     return user_data[user].backpack_capacity;
   }
 
+  // --------------------------------------------------------------------------
+  // Part 2: Attributes
+  //
+  // ItemInstances and SchemaItems can have attributes. These attributes are
+  // defined here.
+  struct AttributeDefinition {
+    // The attribute number. Nonzero if this attribute exists.
+    uint32 defindex;
+
+    // A mapping of strings in the system.
+    mapping (bytes32 => bytes32) attribute_data;
+
+    // Whether users with Permissions.ModifiableAttribute can modify this
+    // attribute. For security reasons, this is a default value and is stored
+    // per attribute on items which receive this attribute. modifiable
+    // attributes may not be placed on schema items.
+    bool modifiable;
+  }
+
+  function SetAttribute(uint32 defindex, bytes32 name, bytes32 value) {
+    if (defindex == 0) {
+      // We want 0 to be a magic uninitialized value.
+      return;
+    }
+    if (all_attributes[defindex].defindex == 0)
+      all_attributes[defindex].defindex = defindex;
+    all_attributes[defindex].attribute_data[name] = value;
+  }
+
+  function SetAttributeModifiable(uint32 defindex, bool modifiable) {
+    if (defindex == 0) {
+      // We want 0 to be a magic uninitialized value.
+      return;
+    }
+    if (all_attributes[defindex].defindex == 0)
+      all_attributes[defindex].defindex = defindex;
+    all_attributes[defindex].modifiable = modifiable;
+  }
+
+  function GetAttribute(uint32 defindex, bytes32 name) returns (bytes32) {
+    return all_attributes[defindex].attribute_data[name];
+  }
+
   function BackpackSystem() {
     owner = msg.sender;
   }
 
   address private owner;
   mapping (address => User) private user_data;
+  mapping (uint32 => AttributeDefinition) private all_attributes;
 }
