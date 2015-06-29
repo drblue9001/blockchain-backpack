@@ -36,7 +36,7 @@ class PermissionsTest(unittest.TestCase):
         # Starts without the permission.
         self.assertFalse(self.contract.HasPermission(tester.a1, 4));
 
-        # Can't take a permission by itself (kPermissionUnlockedItemModify).
+        # Can't take a permission by itself (AddAtributesToItem).
         self.assertEquals(
             self.contract.SetPermission(tester.a1, 4, True, sender=tester.k1),
             kPermissionDenied)
@@ -58,6 +58,30 @@ class PermissionsTest(unittest.TestCase):
         # The user can turn off the ability to receive items.
         self.contract.SetAllowItemsReceived(False, sender=tester.k1);
         self.assertFalse(self.contract.AllowsItemsReceived(tester.a1));
+
+    def test_user_cant_create_self(self):
+        self.assertEquals(self.contract.CreateUser(tester.a1, sender=tester.k1),
+                          kPermissionDenied);
+        self.assertEquals(self.contract.GetBackpackCapacityFor(tester.a1), 0);
+
+    def test_user_cant_grant_self_capacity(self):
+        # Build the user.
+        self.assertEquals(self.contract.CreateUser(tester.a1), kOK);
+        self.assertEquals(self.contract.GetBackpackCapacityFor(tester.a1), 300);
+
+        # Ensure the user can't grant self more backpack space.
+        self.assertEquals(self.contract.AddBackpackCapacityFor(
+            tester.a1, sender=tester.k1), kPermissionDenied);
+        self.assertEquals(self.contract.GetBackpackCapacityFor(tester.a1), 300);
+
+    def test_can_grant_capacity(self):
+        # Build the user.
+        self.assertEquals(self.contract.CreateUser(tester.a1), kOK);
+        self.assertEquals(self.contract.GetBackpackCapacityFor(tester.a1), 300);
+
+        self.assertEquals(self.contract.AddBackpackCapacityFor(tester.a1), kOK);
+        self.assertEquals(self.contract.GetBackpackCapacityFor(tester.a1), 400);
+
 
 if __name__ == '__main__':
     unittest.main()

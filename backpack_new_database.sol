@@ -10,18 +10,18 @@ contract UnlockedItemHandler {
 
 contract MutatingExtensionContract {
   function ExtensionFunction(bytes32 name, uint64[] item_id)
-      returns (bytes32 message) {}
+      external returns (bytes32 message) {}
 }
 
 // An extension contract whose entry point is constant (and therefore can run
 // off blockchain).
 contract ConstantExtensionContract {
-  function ExtensionFunction(bytes32 name, uint64[] item_id) constant
+  function ExtensionFunction(bytes32 name, uint64[] item_id) external constant
       returns (bytes32 message) {}
 }
 
 
-// Version 2 of the backpack system. This tries to make trading cheaper, and
+// Version 3 of the backpack system. This tries to make trading cheaper, and
 contract NewBackpackSystem {
   // --------------------------------------------------------------------------
   // Part 1: Users and Permissions
@@ -163,13 +163,11 @@ contract NewBackpackSystem {
     DOEST_EXIST,
     // This item exists and is owned by someone.
     ITEM_EXISTS,
-    // This item doesn't really exist; it is part of another item's history.
-    HISTORICAL,
     // This item is currently being constructed and hasn't been finalized yet.
     UNDER_CONSTRUCTION
   }
 
-  // This is take two at building an item database.
+  // This is take three at building an item database.
   //
   // We want to minimizes the data costs of making a new item, which can get
   // arbitrarily expensive once you start adding strange parts, custom text,
@@ -199,18 +197,6 @@ contract NewBackpackSystem {
     // someone, this is STATE_ITEM_EXISTS.
     ItemState state;
 
-    // References to this item in the historical DAG. This value is 0 when
-    // STATE_DOEST_EXIST. It is always 1 when STATE_UNDER_CONSTRUCTION. It is
-    // usually 1 when STATE_HISTORICAL or STATE_ITEM_EXISTS, but can be 2 or
-    // more when this item has been duplicated by support after the fact.
-    //
-    // Why keep track of this? Because when we actually delete an item, we also
-    // go backwards through the history chain and delete it to save on chain
-    // space. (Anyone who is really interested in the history can do their own
-    // off chain data mining since blockchain history is immutable; we're just
-    // deleting the data from what the contract can access.)
-    uint8 refcount;
-
     // -- Why inline the next three uint16? To save space. All items have these
     // three properties and the world works on unprincipled excpetions and
     // hacks.
@@ -230,7 +216,7 @@ contract NewBackpackSystem {
 
     // 0 if this is the original instance of an item. If not, this is the
     // previous item id.
-    uint64 previous_id;
+    uint64 original_id;
 
     // New values for this item.
     IntegerAttribute[] modified_int_attributes;
@@ -240,8 +226,8 @@ contract NewBackpackSystem {
   function CreateNewItem(uint32 defindex, uint16 quality,
                          uint16 origin, address recipient) {
     if (HasPermission(msg.sender, Permissions.GrantItems)) {
-      uint64 next_item_id = GetNextItemID();
-      ItemInstance item = all_items[next_item_id];
+      uint64 item_id = GetNextItemID();
+      ItemInstance item = all_items[item_id];
       item.state = ItemState.UNDER_CONSTRUCTION;
       item.owner = recipient;
       item.unlocked_for = msg.sender;
@@ -250,22 +236,10 @@ contract NewBackpackSystem {
       item.quality = quality;
       item.origin = origin;
       item.defindex = defindex;
-      item.previous_id = 0;
+      item.original_id = item_id;
 
       // The item is left unfinalized and unlocked for the creator to possibly
       // add attributes and effects.
-    }
-  }
-
-  // This is the equivalent of Steam Support duping an item for someone.
-  function DupHistoricalItem(uint64 item_id, address recipient) {
-    if (HasPermission(msg.sender, Permissions.GrantItems)) {
-      uint64 new_item_id = BuildNewItemCopyImpl(recipient, item_id);
-
-      ItemInstance old_item = all_items[item_id];
-      old_item.refcount++;
-
-      // TODO(drblue): Place |new_item_id| in |recipient| backpack.
     }
   }
 
@@ -404,5 +378,6 @@ contract NewBackpackSystem {
   mapping (address => User) user_data;
   mapping (uint32 => AttributeDefinition) all_attributes;
   mapping (uint32 => SchemaItem) item_schemas;
+
   mapping (uint64 => ItemInstance) all_items;
 }
