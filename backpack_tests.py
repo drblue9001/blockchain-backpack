@@ -7,7 +7,7 @@ from ethereum import tester
 from ethertdd import FileContractStore
 
 # Up the gas limit because our contract is pretty huge.
-tester.gas_limit = 10000000;
+tester.gas_limit = 100000000;
 
 kOK = 'OK\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
 kPermissionDenied = 'Permission Denied\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
@@ -16,7 +16,7 @@ kInvalidAttribute = 'Invalid Attribute\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x
 
 fs = FileContractStore()
 
-class UsersAndPermissionsTest(unittest.TestCase):
+class BackpackSystemTest(unittest.TestCase):
     def setUp(self):
         self.t = tester.state()
         self.t.mine()
@@ -24,6 +24,8 @@ class UsersAndPermissionsTest(unittest.TestCase):
                                                  state=self.t)
         self.t.mine()
 
+
+class UsersAndPermissionsTest(BackpackSystemTest):
     def test_creator_has_all_permissions(self):
         for i in [0, 1, 2, 3, 4, 5]:
             self.assertTrue(self.contract.HasPermission(tester.a0, i))
@@ -84,14 +86,7 @@ class UsersAndPermissionsTest(unittest.TestCase):
         self.assertEquals(self.contract.AddBackpackCapacityFor(tester.a1), kOK);
         self.assertEquals(self.contract.GetBackpackCapacityFor(tester.a1), 400);
 
-class AttributeTest(unittest.TestCase):
-    def setUp(self):
-        self.t = tester.state()
-        self.t.mine()
-        self.contract = fs.BackpackSystem.create(sender=tester.k0,
-                                                 state=self.t)
-        self.t.mine()
-
+class AttributeTest(BackpackSystemTest):
     def test_modify_schema_permission(self):
         self.assertEquals(self.contract.SetAttribute(1, "Two", "Three", sender=tester.k1),
                           kPermissionDenied);
@@ -106,14 +101,7 @@ class AttributeTest(unittest.TestCase):
         self.assertEquals(self.contract.GetAttribute(1, "One"),
                           '1\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00');
 
-class SchemaTest(unittest.TestCase):
-    def setUp(self):
-        self.t = tester.state()
-        self.t.mine()
-        self.contract = fs.BackpackSystem.create(sender=tester.k0,
-                                                 state=self.t)
-        self.t.mine()
-
+class SchemaTest(BackpackSystemTest):
     def test_schema_permission(self):
         self.assertEquals(self.contract.SetItemSchema(18, 5, 25, 0, sender=tester.k1),
                           kPermissionDenied);
@@ -135,6 +123,44 @@ class SchemaTest(unittest.TestCase):
         # Add the attribute to "Sleeveless in Siberia" (30556).
         self.assertEquals(self.contract.SetItemSchema(30556, 1, 100, 0), kOK);
         self.assertEquals(self.contract.AddIntAttributeToItemSchema(30556, 388, 64), kOK);
+
+
+class ItemsTests(BackpackSystemTest):
+    def test_dont_create_item_with_no_schema(self):
+        # Attempting to build an item that has no defined schema should fail.
+        self.contract.CreateNewItem(20, 0, 1, tester.a1);
+        self.assertEquals(self.contract.GetNumberOfItemsOwnedFor(tester.a1),
+                          0);
+
+    def test_user_cant_create_own_items(self):
+        # Define item defindex 20, so that the call would otherwise be valid:
+        self.assertEquals(self.contract.SetItemSchema(20, 1, 100, 0), kOK);
+
+        self.contract.CreateNewItem(20, 0, 1, tester.a1, sender=tester.k1);
+
+        self.assertEquals(self.contract.GetNumberOfItemsOwnedFor(tester.a1),
+                          0);
+
+    def test_valid_item_creation(self):
+        # Build a valid schema item and then instantiate it.
+        self.assertEquals(self.contract.SetItemSchema(20, 50, 50, 0), kOK);
+        self.contract.CreateNewItem(20, 0, 1, tester.a1);
+
+        # Verify that the user's backpack has a single item in it, and that
+        # the item has the right defindex.
+        self.assertEquals(self.contract.GetNumberOfItemsOwnedFor(tester.a1),
+                          1);
+        item_id = self.contract.GetItemIdFromBackpack(tester.a1, 0);
+        self.assertNotEquals(item_id, 0);
+
+        # Verify that the item's data is correct.
+        item_data = self.contract.GetItemData(item_id);
+        self.assertEquals(item_data[0], 20);
+        # TODO(drblue): Skipping owner since python harness is messing it up.
+        self.assertEquals(item_data[2], 50);
+        # TODO(drblue): skip quality / origin for now. How do we deal with
+        # strangifiers / etc.
+        self.assertEquals(item_data[5], item_id);
 
 if __name__ == '__main__':
     unittest.main()

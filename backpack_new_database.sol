@@ -139,9 +139,6 @@ contract NewBackpackSystem {
     // The attribute defindex that we're setting.
     uint32 defindex;
 
-    // true if this value was deleted instead of set to a value.
-    bool deleted;
-
     // The new value.
     uint64 value;
   }
@@ -149,9 +146,6 @@ contract NewBackpackSystem {
   struct StringAttribute {
     // The attribute defindex;
     uint32 defindex;
-
-    // true if this value was deleted instead of set to a value.
-    bool deleted;
 
     // The new value.
     bytes32 value;
