@@ -300,16 +300,17 @@ contract BackpackSystem {
 
   // This is the main method which is used to make new items. As long as the
   // caller has permission, it always succeeds regardless if the user's
-  // backpack is over capacity or not.
+  // backpack is over capacity or not. This function returns the item id of the
+  // created item or 0 is there was an error.
   function CreateNewItem(uint32 defindex, uint16 quality,
-                         uint16 origin, address recipient) {
+                         uint16 origin, address recipient) returns (uint64) {
     if (!HasPermission(msg.sender, Permissions.GrantItems))
-      return;
+      return 0;
 
     // The item defindex is not defined!
     SchemaItem schema = item_schemas[defindex];
     if (schema.min_level == 0)
-      return;
+      return 0;
 
     uint64 item_id = GetNextItemID();
 
@@ -334,6 +335,7 @@ contract BackpackSystem {
 
     // The item is left unfinalized and unlocked for the creator to possibly
     // add attributes and effects.
+    return item_id;
   }
 
   function GiveItemTo(uint64 item_id, address recipient) {
@@ -364,12 +366,45 @@ contract BackpackSystem {
     if (item.state == ItemState.UNDER_CONSTRUCTION &&
         (item.owner == msg.sender || item.unlocked_for == msg.sender)) {
       item.state = ItemState.ITEM_EXISTS;
+
+      // TODO(drblue): Actually do the locking stuff.
+      item.unlocked_for = 0;
       // Finalizing an item implicitly locks it.
       // EnsureLockedImpl(item_id);
     }
   }
 
-  // function DeleteItem(uint64) {  }
+  function DeleteItem(uint64 item_id) {
+    uint256 internal_id = all_items[item_id];
+    if (internal_id == 0)
+      return;
+
+    ItemInstance item = item_storage[internal_id];
+    if (item.owner == msg.sender || item.unlocked_for == msg.sender) {
+      // Walk the owners backpack, looking for the reference to the item. When
+      // we find it, remove it.
+      User u = user_data[item.owner];
+      for (uint32 i = 0; i < u.backpack_length; ++i) {
+        if (u.item_ids[i] == item_id) {
+          if (i == u.backpack_length - 1) {
+            // We are the last item in the item list.
+            u.item_ids[i] = 0;
+          } else {
+            // We take the last item in the backpack list and move it here
+            u.item_ids[i] = u.item_ids[u.backpack_length - 1];
+            u.item_ids[u.backpack_length - 1] = 0;
+          }
+
+          u.backpack_length--;
+          break;
+        }
+      }
+
+      // Delete the actual item.
+      delete item_storage[internal_id];
+      delete all_items[item_id];
+    }
+  }
 
   function GetItemData(uint64 item_id) constant
       returns (uint32 defindex, address owner, uint16 level,

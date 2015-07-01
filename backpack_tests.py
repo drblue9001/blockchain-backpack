@@ -126,6 +126,23 @@ class SchemaTest(BackpackSystemTest):
 
 
 class ItemsTests(BackpackSystemTest):
+    def GetArrayOfDefindexOfBackpack(self, address):
+        count = self.contract.GetNumberOfItemsOwnedFor(address);
+        defindixes = []
+        for i in range(count):
+            item_id = self.contract.GetItemIdFromBackpack(tester.a1, i);
+            self.assertNotEquals(item_id, 0);
+            item_data = self.contract.GetItemData(item_id);
+            defindixes.append(item_data[0]);
+        return defindixes
+
+    def GetArrayOfItemIdsOfBackpack(self, address):
+        count = self.contract.GetNumberOfItemsOwnedFor(address);
+        item_ids = []
+        for i in range(count):
+            item_ids.append(self.contract.GetItemIdFromBackpack(tester.a1, i));
+        return item_ids
+
     def test_dont_create_item_with_no_schema(self):
         # Attempting to build an item that has no defined schema should fail.
         self.contract.CreateNewItem(20, 0, 1, tester.a1);
@@ -161,6 +178,54 @@ class ItemsTests(BackpackSystemTest):
         # TODO(drblue): skip quality / origin for now. How do we deal with
         # strangifiers / etc.
         self.assertEquals(item_data[5], item_id);
+
+    def test_delete_last_item(self):
+        for i in range(1, 4):
+            self.assertEquals(self.contract.SetItemSchema(i, 50, 50, 0), kOK);
+            id = self.contract.CreateNewItem(i, 0, 1, tester.a1);
+            self.contract.FinalizeItem(id);
+
+        indicies = self.GetArrayOfDefindexOfBackpack(tester.a1);
+        self.assertEquals([1,2,3], indicies);
+
+        item_ids = self.GetArrayOfItemIdsOfBackpack(tester.a1);
+
+        # Attempt to delete the last item:
+        self.contract.DeleteItem(item_ids[-1], sender=tester.k1);
+
+        indicies = self.GetArrayOfDefindexOfBackpack(tester.a1);
+        self.assertEquals([1,2], indicies);
+
+    def test_delete_first_item(self):
+        for i in range(1, 4):
+            self.assertEquals(self.contract.SetItemSchema(i, 50, 50, 0), kOK);
+            id = self.contract.CreateNewItem(i, 0, 1, tester.a1);
+            self.contract.FinalizeItem(id);
+
+        indicies = self.GetArrayOfDefindexOfBackpack(tester.a1);
+        self.assertEquals([1,2,3], indicies);
+
+        item_ids = self.GetArrayOfItemIdsOfBackpack(tester.a1);
+
+        # Attempt to delete the last item:
+        self.contract.DeleteItem(item_ids[0], sender=tester.k1);
+
+        indicies = self.GetArrayOfDefindexOfBackpack(tester.a1);
+        self.assertEquals([3,2], indicies);
+
+    def test_cant_delete_others_items(self):
+        self.assertEquals(self.contract.SetItemSchema(5, 50, 50, 0), kOK);
+        id = self.contract.CreateNewItem(5, 0, 1, tester.a1);
+        self.contract.FinalizeItem(id);
+
+        item_ids = self.GetArrayOfItemIdsOfBackpack(tester.a1);
+        self.assertEquals([id], item_ids);
+
+        # Third party can't delete the item:
+        self.contract.DeleteItem(id, sender=tester.k2);
+        item_ids = self.GetArrayOfItemIdsOfBackpack(tester.a1);
+        self.assertEquals([id], item_ids);
+
 
 if __name__ == '__main__':
     unittest.main()
