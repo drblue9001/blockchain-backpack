@@ -261,6 +261,10 @@ contract BackpackSystem {
   // externally, which should be in the same numeric namespace as the rest of
   // Valve's item servers.
   struct ItemInstance {
+    // The current item id. This changes each time the item is modified or
+    // changes hands.
+    uint64 id;
+
     // This is the owner of this item.
     address owner;
 
@@ -289,8 +293,7 @@ contract BackpackSystem {
     // The item type index.
     uint32 defindex;
 
-    // 0 if this is the original instance of an item. If not, this is the
-    // previous item id.
+    // The original id this item was created with.
     uint64 original_id;
 
     // New values for this item.
@@ -317,9 +320,10 @@ contract BackpackSystem {
     uint256 next_internal_id = item_storage.length;
     item_storage.length++;
     ItemInstance item =  item_storage[next_internal_id];
-    item.state = ItemState.UNDER_CONSTRUCTION;
+    item.id = item_id;
     item.owner = recipient;
     item.unlocked_for = msg.sender;
+    item.state = ItemState.UNDER_CONSTRUCTION;
     item.level = schema.min_level;          // TODO(drblue): Calculate level.
     item.quality = quality;
     item.origin = origin;
@@ -329,30 +333,42 @@ contract BackpackSystem {
     all_items[item_id] = next_internal_id;
 
     // Note that CreateNewItem always succeeds, up to the item limit.
-    User u = user_data[recipient];
-    u.item_ids[u.backpack_length] = item_id;
-    u.backpack_length++;
+    AddItemIdToBackpackImpl(item_id, recipient);
 
     // The item is left unfinalized and unlocked for the creator to possibly
     // add attributes and effects.
     return item_id;
   }
 
-  function GiveItemTo(uint64 item_id, address recipient) {
+  function GiveItemTo(uint64 item_id, address recipient) returns (uint64) {
+    // Ensure the recipient has space.
+    User u = user_data[recipient];
+    if (u.backpack_length >= u.backpack_capacity)
+      return 0;
+
     uint256 internal_id = all_items[item_id];
     if (internal_id == 0)
-      return;
+      return 0;
 
     ItemInstance item = item_storage[internal_id];
     if (item.state == ItemState.ITEM_EXISTS &&
         (item.owner == msg.sender || item.unlocked_for == msg.sender)) {
-      // Ensure Locked.
+      // TODO(drblue): Ensure Locked.
+      item.unlocked_for = 0;
 
+      // Clean up references to the previous |item_id|.
+      RemoveItemIdFromBackpackImpl(item_id, item.owner);
+      delete all_items[item_id];
 
-      // Finalize.
-
-      // Remove |previous_item_id| from backpack. Add new item id to backpack.
+      uint64 new_item_id = GetNextItemID();
+      item.id = new_item_id;
+      item.owner = recipient;
+      all_items[new_item_id] = internal_id;
+      AddItemIdToBackpackImpl(new_item_id, recipient);
+      return new_item_id;
     }
+
+    return 0;
   }
 
   // function AddIntAttribute()
@@ -381,24 +397,7 @@ contract BackpackSystem {
 
     ItemInstance item = item_storage[internal_id];
     if (item.owner == msg.sender || item.unlocked_for == msg.sender) {
-      // Walk the owners backpack, looking for the reference to the item. When
-      // we find it, remove it.
-      User u = user_data[item.owner];
-      for (uint32 i = 0; i < u.backpack_length; ++i) {
-        if (u.item_ids[i] == item_id) {
-          if (i == u.backpack_length - 1) {
-            // We are the last item in the item list.
-            u.item_ids[i] = 0;
-          } else {
-            // We take the last item in the backpack list and move it here
-            u.item_ids[i] = u.item_ids[u.backpack_length - 1];
-            u.item_ids[u.backpack_length - 1] = 0;
-          }
-
-          u.backpack_length--;
-          break;
-        }
-      }
+      RemoveItemIdFromBackpackImpl(item_id, item.owner);
 
       // Delete the actual item.
       delete item_storage[internal_id];
@@ -430,6 +429,32 @@ contract BackpackSystem {
 
   // --------------------------------------------------------------------------
 
+  function AddItemIdToBackpackImpl(uint64 item_id, address recipient) private {
+    User u = user_data[recipient];
+    u.item_ids[u.backpack_length] = item_id;
+    u.backpack_length++;
+  }
+
+  function RemoveItemIdFromBackpackImpl(uint64 item_id, address owner) private {
+    // Walk the owners backpack, looking for the reference to the item. When we
+    // find it, remove it.
+    User u = user_data[owner];
+    for (uint32 i = 0; i < u.backpack_length; ++i) {
+      if (u.item_ids[i] == item_id) {
+        if (i == u.backpack_length - 1) {
+          // We are the last item in the item list.
+          u.item_ids[i] = 0;
+        } else {
+          // We take the last item in the backpack list and move it here
+          u.item_ids[i] = u.item_ids[u.backpack_length - 1];
+          u.item_ids[u.backpack_length - 1] = 0;
+        }
+
+        u.backpack_length--;
+        break;
+      }
+    }
+  }
 
   function BackpackSystem() {
     owner = msg.sender;

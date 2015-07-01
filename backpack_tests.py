@@ -130,7 +130,7 @@ class ItemsTests(BackpackSystemTest):
         count = self.contract.GetNumberOfItemsOwnedFor(address);
         defindixes = []
         for i in range(count):
-            item_id = self.contract.GetItemIdFromBackpack(tester.a1, i);
+            item_id = self.contract.GetItemIdFromBackpack(address, i);
             self.assertNotEquals(item_id, 0);
             item_data = self.contract.GetItemData(item_id);
             defindixes.append(item_data[0]);
@@ -140,7 +140,7 @@ class ItemsTests(BackpackSystemTest):
         count = self.contract.GetNumberOfItemsOwnedFor(address);
         item_ids = []
         for i in range(count):
-            item_ids.append(self.contract.GetItemIdFromBackpack(tester.a1, i));
+            item_ids.append(self.contract.GetItemIdFromBackpack(address, i));
         return item_ids
 
     def test_dont_create_item_with_no_schema(self):
@@ -226,6 +226,60 @@ class ItemsTests(BackpackSystemTest):
         item_ids = self.GetArrayOfItemIdsOfBackpack(tester.a1);
         self.assertEquals([id], item_ids);
 
+    def test_can_give_item(self):
+        self.assertEquals(self.contract.CreateUser(tester.a1), kOK);
+        self.assertEquals(self.contract.CreateUser(tester.a2), kOK);
+
+        self.assertEquals(self.contract.SetItemSchema(5, 50, 50, 0), kOK);
+        id = self.contract.CreateNewItem(5, 0, 1, tester.a1);
+        self.contract.FinalizeItem(id);
+        original_id = self.contract.GetItemData(id)[5];
+
+        item_ids = self.GetArrayOfItemIdsOfBackpack(tester.a1);
+        self.assertEquals([id], item_ids);
+
+        new_id = self.contract.GiveItemTo(id, tester.a2, sender=tester.k1);
+
+        item_ids = self.GetArrayOfItemIdsOfBackpack(tester.a1);
+        self.assertEquals([], item_ids);
+
+        item_ids = self.GetArrayOfItemIdsOfBackpack(tester.a2);
+        self.assertEquals([new_id], item_ids);
+        new_original_id = self.contract.GetItemData(new_id)[5];
+        self.assertEquals(original_id, new_original_id);
+
+    def test_cant_give_items_when_no_capacity(self):
+        self.assertEquals(self.contract.SetItemSchema(5, 50, 50, 0), kOK);
+        id = self.contract.CreateNewItem(5, 0, 1, tester.a1);
+        self.contract.FinalizeItem(id);
+
+        item_ids = self.GetArrayOfItemIdsOfBackpack(tester.a1);
+        self.assertEquals([id], item_ids);
+
+        self.contract.GiveItemTo(id, tester.a2, sender=tester.k1);
+
+        item_ids = self.GetArrayOfItemIdsOfBackpack(tester.a1);
+        self.assertEquals([id], item_ids);
+        item_ids = self.GetArrayOfItemIdsOfBackpack(tester.a2);
+        self.assertEquals([], item_ids);
+
+    def test_cant_give_yourself_others_items(self):
+        self.assertEquals(self.contract.CreateUser(tester.a1), kOK);
+        self.assertEquals(self.contract.CreateUser(tester.a2), kOK);
+
+        self.assertEquals(self.contract.SetItemSchema(5, 50, 50, 0), kOK);
+        id = self.contract.CreateNewItem(5, 0, 1, tester.a1);
+        self.contract.FinalizeItem(id);
+
+        item_ids = self.GetArrayOfItemIdsOfBackpack(tester.a1);
+        self.assertEquals([id], item_ids);
+
+        self.contract.GiveItemTo(id, tester.a2, sender=tester.k2);
+
+        item_ids = self.GetArrayOfItemIdsOfBackpack(tester.a1);
+        self.assertEquals([id], item_ids);
+        item_ids = self.GetArrayOfItemIdsOfBackpack(tester.a2);
+        self.assertEquals([], item_ids);
 
 if __name__ == '__main__':
     unittest.main()
