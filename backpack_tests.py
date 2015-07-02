@@ -281,5 +281,7 @@ class ItemsTests(BackpackSystemTest):
         item_ids = self.GetArrayOfItemIdsOfBackpack(tester.a2);
         self.assertEquals([], item_ids);
 
+    # TODO(drblue): Add tests for setting an int attribute.
+
 if __name__ == '__main__':
     unittest.main()

@@ -231,10 +231,10 @@ contract BackpackSystem {
     // The new value.
     uint64 value;
 
-    // Whether this attribute is modifyable. This value is copied from the
+    // Whether this attribute is modifiable. This value is copied from the
     // attribute definition at the time the attribute is set on an item
     // instance.
-    bool modifyable;
+    bool modifiable;
   }
 
   struct StringAttribute {
@@ -371,7 +371,42 @@ contract BackpackSystem {
     return 0;
   }
 
-  // function AddIntAttribute()
+  function SetIntAttribute(uint64 item_id,
+                           uint32 attribute_defindex,
+                           uint64 value) {
+    uint256 internal_id = all_items[item_id];
+    if (internal_id == 0)
+      return;
+
+    ItemInstance item = item_storage[internal_id];
+    if (item.state == ItemState.UNDER_CONSTRUCTION &&
+        HasPermission(msg.sender, Permissions.AddAttributesToItem) &&
+        (item.owner == msg.sender || item.unlocked_for == msg.sender)) {
+      // Verify that attribute_defindex is defined.
+      AttributeDefinition a = all_attributes[attribute_defindex];
+      if (a.defindex != attribute_defindex)
+        return;
+
+      // Iterate through all the items and change the value if we already see a
+      // value for this defindex.
+      uint i = 0;
+      for (i = 0; i < item.int_attributes.length; ++i) {
+        IntegerAttribute attr = item.int_attributes[i];
+        if (attr.defindex == attribute_defindex) {
+          attr.value = value;
+          attr.modifiable = a.modifiable;
+          return;
+        }
+      }
+
+      // We didn't find a preexisting attribute. Add one.
+      item.int_attributes.length++;
+      attr = item.int_attributes[i];
+      attr.defindex = attribute_defindex;
+      attr.value = value;
+      attr.modifiable = a.modifiable;
+    }
+  }
 
   function FinalizeItem(uint64 item_id) {
     uint256 internal_id = all_items[item_id];
@@ -477,11 +512,11 @@ contract BackpackSystem {
   mapping (uint32 => AttributeDefinition) private all_attributes;
 
   // Maps item defindex to the schema definition.
-  mapping (uint32 => SchemaItem) item_schemas;
+  mapping (uint32 => SchemaItem) private item_schemas;
 
   // 0 indexed storage of items.
-  ItemInstance[] item_storage;
+  ItemInstance[] private item_storage;
 
   // Maps item ids to internal storage ids.
-  mapping (uint64 => uint256) all_items;
+  mapping (uint64 => uint256) private all_items;
 }
