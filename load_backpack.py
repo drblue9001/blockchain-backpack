@@ -88,6 +88,29 @@ for item in backpack_json['items']:
   defindex = item['defindex']
   EnsureSchemaItem(defindex)
 
-  # TODO(drblue): Add attributes. This requires us to calculate the set difference
-  # of the item's properties minus the item schemas' because the valve item
-  # server merges those together on output items.
+  schema_item = items_by_defindex[defindex];
+  schema_attributes_by_defindex = {}
+  if 'attributes' in schema_item:
+    # The backpack json format merges inherited attributes into the item
+    # instance deinition. Filter out the real attributes.
+    for item_attr in schema_item['attributes']:
+      # Each attribute in the item definition doesn't list the defindex. We
+      # instead have to match by name
+      real_attr = attributes_by_name[item_attr['name']]
+      schema_attributes_by_defindex[real_attr['defindex']] = real_attr
+
+  on_item_attr = []
+  if 'attributes' in item:
+    for a in item['attributes']:
+      a_defindex = a['defindex']
+      if not a_defindex in schema_attributes_by_defindex:
+        # TODO: For now, only add attributes that are ints.
+        if type(a['value']) is int:
+          on_item_attr.append({
+              'defindex': a_defindex,
+              'value': a['value'],
+              'name': attributes_by_defindex[a_defindex]['name']})
+
+  # Ensure all the attributes for this item instance are set.
+  for attr in on_item_attr:
+    EnsureAttribute(attr['defindex'])
