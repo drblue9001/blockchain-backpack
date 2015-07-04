@@ -315,29 +315,34 @@ contract BackpackSystem {
     if (schema.min_level == 0)
       return 0;
 
-    uint64 item_id = GetNextItemID();
+    // TODO(drblue): Calculate level.
+    return CreateItemImpl(defindex, quality, origin, recipient,
+                          msg.sender /* unlocked_for */,
+                          schema.min_level /* level */,
+                          0 /* original_id */);
+  }
 
-    uint256 next_internal_id = item_storage.length;
-    item_storage.length++;
-    ItemInstance item =  item_storage[next_internal_id];
-    item.id = item_id;
-    item.owner = recipient;
-    item.unlocked_for = msg.sender;
-    item.state = ItemState.UNDER_CONSTRUCTION;
-    item.level = schema.min_level;          // TODO(drblue): Calculate level.
-    item.quality = quality;
-    item.origin = origin;
-    item.defindex = defindex;
-    item.original_id = item_id;
+  // The lower level item creation function and is optimized for creation of
+  // items which already exist off chain, though it can be used for any fine
+  // tune building of an item.
+  function ImportItem(address recipient,
+                      uint32 defindex,
+                      uint16 quality,
+                      uint16 origin,
+                      uint16 level,
+                      uint64 original_id,
+                      address unlocked_for) returns (uint64) {
+    // calculate items
+    if (!HasPermission(msg.sender, Permissions.GrantItems))
+      return 0;
 
-    all_items[item_id] = next_internal_id;
+    // The item defindex is not defined!
+    SchemaItem schema = item_schemas[defindex];
+    if (schema.min_level == 0)
+      return 0;
 
-    // Note that CreateNewItem always succeeds, up to the item limit.
-    AddItemIdToBackpackImpl(item_id, recipient);
-
-    // The item is left unfinalized and unlocked for the creator to possibly
-    // add attributes and effects.
-    return item_id;
+    return CreateItemImpl(defindex, quality, origin, recipient,
+                          unlocked_for, level, original_id);
   }
 
   function GiveItemTo(uint64 item_id, address recipient) returns (uint64) {
@@ -419,6 +424,11 @@ contract BackpackSystem {
       item.state = ItemState.ITEM_EXISTS;
 
       // TODO(drblue): Actually do the locking stuff.
+      //
+      // TODO(drblue): Actually, DO we want to have the item perform an OnLocked()
+      // callback when the finalize? We're really piggybacking on unlocked_for
+      // so that the creator can add additional attributes.
+
       item.unlocked_for = 0;
       // Finalizing an item implicitly locks it.
       // EnsureLockedImpl(item_id);
@@ -463,6 +473,40 @@ contract BackpackSystem {
 
 
   // --------------------------------------------------------------------------
+
+  function CreateItemImpl(uint32 defindex, uint16 quality,
+                          uint16 origin, address recipient,
+                          address unlocked_for,
+                          uint16 level,
+                          uint64 original_id) private
+      returns (uint64) {
+    uint64 item_id = GetNextItemID();
+
+    uint256 next_internal_id = item_storage.length;
+    item_storage.length++;
+    ItemInstance item =  item_storage[next_internal_id];
+    item.id = item_id;
+    item.owner = recipient;
+    item.unlocked_for = unlocked_for;
+    item.state = ItemState.UNDER_CONSTRUCTION;
+    item.level = level;
+    item.quality = quality;
+    item.origin = origin;
+    item.defindex = defindex;
+    if (original_id == 0)
+      item.original_id = item_id;
+    else
+      item.original_id = original_id;
+
+    all_items[item_id] = next_internal_id;
+
+    // Note that CreateNewItem always succeeds, up to the item limit.
+    AddItemIdToBackpackImpl(item_id, recipient);
+
+    // The item is left unfinalized and unlocked for the creator to possibly
+    // add attributes and effects.
+    return item_id;
+  }
 
   function AddItemIdToBackpackImpl(uint64 item_id, address recipient) private {
     User u = user_data[recipient];

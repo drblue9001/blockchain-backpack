@@ -114,3 +114,9 @@ for item in backpack_json['items']:
   # Ensure all the attributes for this item instance are set.
   for attr in on_item_attr:
     EnsureAttribute(attr['defindex'])
+
+  old_id = item["id"]
+  new_id = c.ImportItem(tester.a1, item["defindex"], item["quality"],
+                        item["origin"], item["level"], item["original_id"],
+                        tester.a0);
+  print "Imported item id='%s' as id='%s'..." % (item["id"], new_id)
