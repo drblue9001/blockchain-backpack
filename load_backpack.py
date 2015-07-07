@@ -1,4 +1,13 @@
 #!/usr/bin/python
+#
+# Real times for running this on my backpack:
+#
+#   real    0m47.604s
+#   real    0m46.471s
+#
+# Note: Despite doing more work, we're faster than the previous 2m11s of the
+# previous load_backpack.py script because of improvement in pyethereum. We
+# don't deserve credit here at all. (Though maybe the array usage helps...?)
 
 import json
 from ethereum import tester
@@ -112,11 +121,18 @@ for item in backpack_json['items']:
               'name': attributes_by_defindex[a_defindex]['name']})
 
   # Ensure all the attributes for this item instance are set.
+  attr_keys = []
+  attr_values = []
   for attr in on_item_attr:
     EnsureAttribute(attr['defindex'])
+    attr_keys.append(attr['defindex'])
+    attr_values.append(attr['value'])
 
   old_id = item["id"]
   new_id = c.ImportItem(tester.a1, item["defindex"], item["quality"],
-                        item["origin"], item["level"], item["original_id"],
-                        tester.a0);
+                        item["origin"], item["level"], item["original_id"]);
   print "Imported item id='%s' as id='%s'..." % (item["id"], new_id)
+  if attr_keys:
+    print " - Importing %s attributes onto %s" % (len(attr_keys), new_id);
+    c.SetIntAttributes(new_id, attr_keys, attr_values);
+  c.FinalizeItem(new_id);

@@ -324,14 +324,15 @@ contract BackpackSystem {
 
   // The lower level item creation function and is optimized for creation of
   // items which already exist off chain, though it can be used for any fine
-  // tune building of an item.
+  // tune building of an item. If |attribute_key| is non zero, we optimize a
+  // call to 
   function ImportItem(address recipient,
                       uint32 defindex,
                       uint16 quality,
                       uint16 origin,
                       uint16 level,
-                      uint64 original_id,
-                      address unlocked_for) returns (uint64) {
+                      uint64 original_id) external
+      returns (uint64) {
     // calculate items
     if (!HasPermission(msg.sender, Permissions.GrantItems))
       return 0;
@@ -342,7 +343,7 @@ contract BackpackSystem {
       return 0;
 
     return CreateItemImpl(defindex, quality, origin, recipient,
-                          unlocked_for, level, original_id);
+                          msg.sender, level, original_id);
   }
 
   function GiveItemTo(uint64 item_id, address recipient) returns (uint64) {
@@ -387,29 +388,26 @@ contract BackpackSystem {
     if (item.state == ItemState.UNDER_CONSTRUCTION &&
         HasPermission(msg.sender, Permissions.AddAttributesToItem) &&
         (item.owner == msg.sender || item.unlocked_for == msg.sender)) {
-      // Verify that attribute_defindex is defined.
-      AttributeDefinition a = all_attributes[attribute_defindex];
-      if (a.defindex != attribute_defindex)
-        return;
+      SetIntAttributeImpl(item_id, attribute_defindex, value);
+    }
+  }
 
-      // Iterate through all the items and change the value if we already see a
-      // value for this defindex.
-      uint i = 0;
-      for (i = 0; i < item.int_attributes.length; ++i) {
-        IntegerAttribute attr = item.int_attributes[i];
-        if (attr.defindex == attribute_defindex) {
-          attr.value = value;
-          attr.modifiable = a.modifiable;
-          return;
-        }
-      }
+  function SetIntAttributes(uint64 item_id,
+                            uint32[] keys,
+                            uint64[] values) external {
+    uint256 internal_id = all_items[item_id];
+    if (internal_id == 0)
+      return;
 
-      // We didn't find a preexisting attribute. Add one.
-      item.int_attributes.length++;
-      attr = item.int_attributes[i];
-      attr.defindex = attribute_defindex;
-      attr.value = value;
-      attr.modifiable = a.modifiable;
+    if (keys.length != values.length)
+      return;
+
+    ItemInstance item = item_storage[internal_id];
+    if (item.state == ItemState.UNDER_CONSTRUCTION &&
+        HasPermission(msg.sender, Permissions.AddAttributesToItem) &&
+        (item.owner == msg.sender || item.unlocked_for == msg.sender)) {
+      for (uint i = 0; i < keys.length; ++i)
+        SetIntAttributeImpl(item_id, keys[i], values[i]);
     }
   }
 
@@ -506,6 +504,42 @@ contract BackpackSystem {
     // The item is left unfinalized and unlocked for the creator to possibly
     // add attributes and effects.
     return item_id;
+  }
+
+  // TODO(drblue): When we can replace uint64 with ItemInstnace on internal
+  // functions, do so here.
+  function SetIntAttributeImpl(uint64 item_id,
+                               uint32 attribute_defindex,
+                               uint64 value) private {
+    uint256 internal_id = all_items[item_id];
+    if (internal_id == 0)
+      return;
+
+    ItemInstance item = item_storage[internal_id];
+
+    // Verify that attribute_defindex is defined.
+    AttributeDefinition a = all_attributes[attribute_defindex];
+    if (a.defindex != attribute_defindex)
+      return;
+
+    // Iterate through all the items and change the value if we already see a
+    // value for this defindex.
+    uint i = 0;
+    for (i = 0; i < item.int_attributes.length; ++i) {
+      IntegerAttribute attr = item.int_attributes[i];
+      if (attr.defindex == attribute_defindex) {
+        attr.value = value;
+        attr.modifiable = a.modifiable;
+        return;
+      }
+    }
+
+    // We didn't find a preexisting attribute. Add one.
+    item.int_attributes.length++;
+    attr = item.int_attributes[i];
+    attr.defindex = attribute_defindex;
+    attr.value = value;
+    attr.modifiable = a.modifiable;
   }
 
   function AddItemIdToBackpackImpl(uint64 item_id, address recipient) private {
