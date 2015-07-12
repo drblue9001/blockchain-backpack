@@ -1,10 +1,19 @@
-//
-
-
 // TODOs:
-// - Look at changing permissions into a set of modifiers.
+// - Look at changing permissions into a set of method modifiers.
 
 
+// A contract which can have items unlocked for it. Contracts which have items
+// unlocked for them should derive from this interface; you will receive
+// these messages in response to events.
+//
+// Implementations of this must be very careful to not spend more than {10000}
+// gas.
+//
+// TODO(drblue): Consider reasonable gas limits here.
+contract UnlockedItemHandler {
+  function OnItemUnlocked(address backpack, uint64 item_id) {}
+  function OnItemLocked(address backpack, uint64 item_id) {}
+}
 
 // An extension contract which takes a list of item ids and 
 contract MutatingExtensionContract {
@@ -359,8 +368,7 @@ contract BackpackSystem {
     ItemInstance item = item_storage[internal_id];
     if (item.state == ItemState.ITEM_EXISTS &&
         (item.owner == msg.sender || item.unlocked_for == msg.sender)) {
-      // TODO(drblue): Ensure Locked.
-      item.unlocked_for = 0;
+      EnsureLockedImpl(internal_id, item_id);
 
       // Clean up references to the previous |item_id|.
       RemoveItemIdFromBackpackImpl(item_id, item.owner);
@@ -411,6 +419,8 @@ contract BackpackSystem {
     }
   }
 
+  /// @notice If `item_id` is currently under construction, this switches the
+  /// item to exists.
   function FinalizeItem(uint64 item_id) {
     uint256 internal_id = all_items[item_id];
     if (internal_id == 0)
@@ -419,18 +429,37 @@ contract BackpackSystem {
     ItemInstance item = item_storage[internal_id];
     if (item.state == ItemState.UNDER_CONSTRUCTION &&
         (item.owner == msg.sender || item.unlocked_for == msg.sender)) {
+      EnsureLockedImpl(internal_id, item_id);
       item.state = ItemState.ITEM_EXISTS;
-
-      // TODO(drblue): Actually do the locking stuff.
-      //
-      // TODO(drblue): Actually, DO we want to have the item perform an OnLocked()
-      // callback when the finalize? We're really piggybacking on unlocked_for
-      // so that the creator can add additional attributes.
-
-      item.unlocked_for = 0;
-      // Finalizing an item implicitly locks it.
-      // EnsureLockedImpl(item_id);
     }
+  }
+
+  /// @notice Unlocks `item_id` for the address `c`.
+  function UnlockItemFor(uint64 item_id, address c) {
+    uint256 internal_id = all_items[item_id];
+    if (internal_id == 0)
+      return;
+
+    ItemInstance item = item_storage[internal_id];
+    if (item.state == ItemState.ITEM_EXISTS &&
+        (item.owner == msg.sender || item.unlocked_for == msg.sender)) {
+      item.unlocked_for = c;
+      // TODO(drblue): This should have a .gas(10000) to limit the transaction,
+      // but we can't do that yet. pyethereum complains with "Transaction
+      // Failed" and no other error message.
+      UnlockedItemHandler(c).OnItemUnlocked(this, item_id);
+    }
+  }
+
+  /// @notice If `item_id` is unlocked, this relocks it.
+  function LockItem(uint64 item_id) {
+    uint256 internal_id = all_items[item_id];
+    if (internal_id == 0)
+      return;
+
+    ItemInstance item = item_storage[internal_id];
+    if (item.owner == msg.sender || item.unlocked_for == msg.sender)
+      EnsureLockedImpl(internal_id, item_id);
   }
 
   function DeleteItem(uint64 item_id) {
@@ -440,6 +469,8 @@ contract BackpackSystem {
 
     ItemInstance item = item_storage[internal_id];
     if (item.owner == msg.sender || item.unlocked_for == msg.sender) {
+      EnsureLockedImpl(internal_id, item_id);
+
       RemoveItemIdFromBackpackImpl(item_id, item.owner);
 
       // Delete the actual item.
@@ -566,6 +597,24 @@ contract BackpackSystem {
         u.backpack_length--;
         break;
       }
+    }
+  }
+
+  function EnsureLockedImpl(uint256 internal_id, uint64 item_id) private
+      returns(address was_unlocked_for) {
+    ItemInstance i = item_storage[internal_id];
+    if (i.unlocked_for != 0) {
+      was_unlocked_for = i.unlocked_for;
+      i.unlocked_for = 0;
+      // We don't send notification messages during item construction.
+      if (i.state != ItemState.UNDER_CONSTRUCTION) {
+        // TODO(drblue): This should have a .gas(10000) to limit the transaction,
+        // but we can't do that yet. pyethereum complains with "Transaction
+        // Failed" and no other error message.
+        UnlockedItemHandler(was_unlocked_for).OnItemLocked(this, item_id);
+      }
+    } else {
+      was_unlocked_for = 0;
     }
   }
 
