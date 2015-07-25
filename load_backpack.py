@@ -47,7 +47,7 @@ print "Creating ethereum context..."
 s = tester.state()
 s.mine()
 fs = FileContractStore()
-c = fs.BackpackSystem.create(sender=tester.k0, state=s)
+c = fs.Backpack.create(sender=tester.k0, state=s)
 
 
 def IncrementMineCounter():

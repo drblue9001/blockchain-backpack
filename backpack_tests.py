@@ -16,16 +16,33 @@ kInvalidAttribute = 'Invalid Attribute\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x
 
 fs = FileContractStore()
 
-class BackpackSystemTest(unittest.TestCase):
+class BackpackTest(unittest.TestCase):
     def setUp(self):
         self.t = tester.state()
         self.t.mine()
-        self.contract = fs.BackpackSystem.create(sender=tester.k0,
-                                                 state=self.t)
+        self.contract = fs.Backpack.create(sender=tester.k0,
+                                           state=self.t)
         self.t.mine()
 
+    def GetArrayOfDefindexOfBackpack(self, address):
+        count = self.contract.GetNumberOfItemsOwnedFor(address);
+        defindixes = []
+        for i in range(count):
+            item_id = self.contract.GetItemIdFromBackpack(address, i);
+            self.assertNotEquals(item_id, 0);
+            item_data = self.contract.GetItemData(item_id);
+            defindixes.append(item_data[0]);
+        return defindixes
 
-class UsersAndPermissionsTest(BackpackSystemTest):
+    def GetArrayOfItemIdsOfBackpack(self, address):
+        count = self.contract.GetNumberOfItemsOwnedFor(address);
+        item_ids = []
+        for i in range(count):
+            item_ids.append(self.contract.GetItemIdFromBackpack(address, i));
+        return item_ids
+
+
+class UsersAndPermissionsTest(BackpackTest):
     def test_creator_has_all_permissions(self):
         for i in [0, 1, 2, 3, 4, 5]:
             self.assertTrue(self.contract.HasPermission(tester.a0, i))
@@ -86,7 +103,7 @@ class UsersAndPermissionsTest(BackpackSystemTest):
         self.assertEquals(self.contract.AddBackpackCapacityFor(tester.a1), kOK);
         self.assertEquals(self.contract.GetBackpackCapacityFor(tester.a1), 400);
 
-class AttributeTest(BackpackSystemTest):
+class AttributeTest(BackpackTest):
     def test_modify_schema_permission(self):
         self.assertEquals(self.contract.SetAttribute(1, "Two", "Three", sender=tester.k1),
                           kPermissionDenied);
@@ -101,7 +118,7 @@ class AttributeTest(BackpackSystemTest):
         self.assertEquals(self.contract.GetAttribute(1, "One"),
                           '1\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00');
 
-class SchemaTest(BackpackSystemTest):
+class SchemaTest(BackpackTest):
     def test_schema_permission(self):
         self.assertEquals(self.contract.SetItemSchema(18, 5, 25, 0, sender=tester.k1),
                           kPermissionDenied);
@@ -125,24 +142,7 @@ class SchemaTest(BackpackSystemTest):
         self.assertEquals(self.contract.AddIntAttributeToItemSchema(30556, 388, 64), kOK);
 
 
-class ItemsTests(BackpackSystemTest):
-    def GetArrayOfDefindexOfBackpack(self, address):
-        count = self.contract.GetNumberOfItemsOwnedFor(address);
-        defindixes = []
-        for i in range(count):
-            item_id = self.contract.GetItemIdFromBackpack(address, i);
-            self.assertNotEquals(item_id, 0);
-            item_data = self.contract.GetItemData(item_id);
-            defindixes.append(item_data[0]);
-        return defindixes
-
-    def GetArrayOfItemIdsOfBackpack(self, address):
-        count = self.contract.GetNumberOfItemsOwnedFor(address);
-        item_ids = []
-        for i in range(count):
-            item_ids.append(self.contract.GetItemIdFromBackpack(address, i));
-        return item_ids
-
+class ItemsTests(BackpackTest):
     def test_dont_create_item_with_no_schema(self):
         # Attempting to build an item that has no defined schema should fail.
         self.contract.CreateNewItem(20, 0, 1, tester.a1);
@@ -281,7 +281,48 @@ class ItemsTests(BackpackSystemTest):
         item_ids = self.GetArrayOfItemIdsOfBackpack(tester.a2);
         self.assertEquals([], item_ids);
 
-    # TODO(drblue): Add tests for setting an int attribute.
+    def test_set_int_attribute(self):
+        self.assertEquals(self.contract.CreateUser(tester.a1), kOK);
+        self.assertEquals(self.contract.SetAttribute(142, "name",
+                                                     "set item tint RGB"),
+                          kOK);
+
+        # Give User 1 an item #5.
+        self.assertEquals(self.contract.SetItemSchema(5, 50, 50, 0), kOK);
+        id = self.contract.CreateNewItem(5, 0, 1, tester.a1);
+        self.contract.SetIntAttribute(id, 142, 8);
+        self.contract.FinalizeItem(id);
+
+        self.assertEquals(self.contract.GetItemLength(id), 1);
+        self.assertEquals(self.contract.GetItemIntAttribute(id, 142), 8);
+
+    # This is broken and I don't understand why this is broken.
+    def test_open_for_modification(self):
+        self.assertEquals(self.contract.CreateUser(tester.a1), kOK);
+        self.contract.SetPermission(tester.a2, 4, True);
+        self.assertEquals(self.contract.SetAttribute(142, "name",
+                                                     "set item tint RGB"),
+                          kOK);
+
+        # Give User 1 an item #5.
+        self.assertEquals(self.contract.SetItemSchema(5, 50, 50, 0), kOK);
+        id = self.contract.CreateNewItem(5, 0, 1, tester.a1);
+        self.contract.FinalizeItem(id);
+
+        # Unlock |id| for tester.a2.
+        self.contract.UnlockItemFor(id, tester.a2, sender=tester.k1);
+
+        self.assertEquals(self.contract.GetItemLength(id), 0);
+
+        # Have User 2 open it for modification.
+        new_id = self.contract.OpenForModification(id, sender=tester.k2);
+        self.contract.SetIntAttribute(new_id, 142, 8, sender=tester.k2);
+        self.contract.FinalizeItem(new_id);
+        self.assertNotEquals(id, new_id);
+
+        self.assertEquals(self.contract.GetItemLength(new_id), 1);
+        self.assertEquals(self.contract.GetItemIntAttribute(new_id, 142), 8);
+
 
 locking_mock_src = '''
 contract LockingMock {
@@ -298,9 +339,9 @@ contract LockingMock {
 }
 '''
 
-class ItemLockingTest(BackpackSystemTest):
+class ItemLockingTest(BackpackTest):
     def setUp(self):
-        BackpackSystemTest.setUp(self);
+        BackpackTest.setUp(self);
         self.locking_mock = self.t.abi_contract(locking_mock_src, language='solidity');
 
     def test_sanity(self):
@@ -327,6 +368,68 @@ class ItemLockingTest(BackpackSystemTest):
     # TODO(drblue): Once I figure out how to get imports working, I should do
     # further tests about what a contract that we've unlocked things for can
     # do.
+
+class PaintCanTest(BackpackTest):
+    def setUp(self):
+        BackpackTest.setUp(self);
+        self.paint_can = fs.PaintCan.create(sender=tester.k0, state=self.t)
+        self.contract.SetPermission(self.paint_can.address, 4, True);
+        self.assertEquals(self.contract.CreateUser(tester.a1), kOK);
+
+
+    def test_paint_can(self):
+        # Step one: define the set_item_tint_rgb attribute. This is shared
+        # between paint cans and
+        self.assertEquals(self.contract.SetAttribute(142, "name",
+                                                     "set item tint RGB"),
+                          kOK);
+
+        # Step two: define the attribute 999999 as
+        # capabilities:{"paintable"}. This works around things having
+        # dictionaries.
+        self.assertEquals(self.contract.SetAttribute(999999, "name",
+                                                     "capabilities_paintable"),
+                          kOK);
+
+        # Step three: define the Australium gold paint can. While there's just
+        # one copy of the contract shared among paint cans, each can
+        self.assertEquals(self.contract.SetItemSchema(5037, 5, 5,
+                                                      self.paint_can.address),
+                          kOK);
+        self.assertEquals(self.contract.AddIntAttributeToItemSchema(5037,
+                                                                    142,
+                                                                    15185211),
+                          kOK);
+
+        # Step four: define the Texas Ten Gallon hat. It is paintable.
+        self.assertEquals(self.contract.SetItemSchema(94, 1, 100, 0), kOK);
+        self.assertEquals(self.contract.AddIntAttributeToItemSchema(94,
+                                                                    999999,
+                                                                    1),
+                          kOK);
+
+        # Step five: give the user an instance of both items.
+        texas_id = self.contract.CreateNewItem(94, 0, 1, tester.a1);
+        self.contract.FinalizeItem(texas_id);
+        paint_id = self.contract.CreateNewItem(5037, 0, 1, tester.a1);
+        self.contract.FinalizeItem(paint_id);
+
+        # Step six: have the user build an execute call to both items. TODO.
+        self.assertEquals(self.contract.UseItem([paint_id, texas_id],
+                                                sender=tester.k1), kOK);
+
+        # The user should only have a Texas Ten Gallon.
+        self.assertEquals(self.GetArrayOfDefindexOfBackpack(tester.a1), [94]);
+
+        # The item |texas_id| should have been replaced by |new_texas_id|.
+        new_texas_id = self.GetArrayOfItemIdsOfBackpack(tester.a1)[0];
+        self.assertNotEquals(new_texas_id, texas_id);
+
+        # TODO(drblue): This fails because SetIntAttribute only works on under
+        # construction items. I haven't created a way to start construction of
+        # a new item number which is a clone of a current item.
+        self.assertEquals(self.contract.GetItemIntAttribute(new_texas_id, 142),
+                          15185211);
 
 
 if __name__ == '__main__':

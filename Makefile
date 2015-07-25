@@ -2,8 +2,15 @@
 
 all: tests
 
-tests: backpack.abi
+tests: all_contracts
 	./backpack_tests.py
 
-backpack.abi: backpack.sol
-	solc backpack.sol --optimize 1 --json-abi file --binary file
+# So solc's import directive doesn't actually scan the filesystem. This rule is
+# minimally worthwhile until that's fixed, but does keep duplicate compilations
+# from handling.
+all_contracts: Backpack.abi
+%.abi: %.sol
+	solc $< --optimize 1 --json-abi file --binary file
+
+clean:
+	rm *.abi *.binary
