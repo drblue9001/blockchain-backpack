@@ -551,6 +551,25 @@ contract Backpack {
     return item.int_attributes.length;
   }
 
+  function GetItemOwner(uint64 item_id) constant returns (address owner) {
+    uint256 internal_id = all_items[item_id];
+    if (internal_id == 0)
+      return;
+
+    ItemInstance item = item_storage[internal_id];
+    return item.owner;
+  }
+
+  function CanGiveItem(uint64 item_id) constant returns (bool) {
+    uint256 internal_id = all_items[item_id];
+    if (internal_id == 0)
+      return false;
+
+    ItemInstance item = item_storage[internal_id];
+    return item.state == ItemState.ITEM_EXISTS &&
+        (item.owner == msg.sender || item.unlocked_for == msg.sender);
+  }
+
   function GetItemIntAttribute(uint64 item_id, uint32 defindex) constant
       returns (uint64 value) {
     uint256 internal_id = all_items[item_id];
@@ -818,4 +837,116 @@ contract PaintCan is MutatingExtensionContract {
     backpack.DeleteItem(item_ids[0]);
     return "OK";
   }
+}
+
+/* -------------------------------------------------------------------------- */
+/* TradeCoordinator                                                           */
+/* -------------------------------------------------------------------------- */
+
+// TODO: Think about using events. Think about spam a bit more.
+contract TradeCoordinator {
+  struct Trade {
+    address user_one;
+    address user_two;
+    uint64[] user_one_items;
+    uint64[] user_two_items;
+  }
+
+  function ProposeTrade(uint64[] my_items,
+                        address user_two,
+                        uint64[] their_items)
+      returns (uint trade_id) {
+    uint i;
+    for (i = 0; i < my_items.length; ++i) {
+      // Verify this item belongs to the sender.
+      if (backpack.GetItemOwner(my_items[i]) != msg.sender)
+        return 0;
+      // Verify this item is in a state where we can give it away.
+      if (backpack.CanGiveItem(my_items[i]) != true)
+        return 0;
+    }
+
+    // Verify that all |their_items| belong to |user_two| single person.
+    for (i = 0; i < their_items.length; ++i) {
+      // Verify this item belongs to |user_two|.
+      if (backpack.GetItemOwner(their_items[i]) != user_two)
+        return 0;
+    }
+
+    // Get the next trade number
+    trade_id = trades.length;
+    trades.length++;
+    Trade t = trades[trade_id];
+    t.user_one = msg.sender;
+    t.user_two = user_two;
+    t.user_one_items = my_items;
+    t.user_two_items = their_items;
+  }
+
+  function AcceptTrade(uint256 trade_id) {
+    Trade t = trades[trade_id];
+    if (msg.sender != t.user_two)
+      return;
+
+    // We need to recheck the validity of the trade before we accept it.
+    uint i;
+    for (i = 0; i < t.user_one_items.length; ++i) {
+      if (backpack.CanGiveItem(t.user_one_items[i]) != true) {
+        RejectTradeImpl(trade_id);
+        return;
+      }
+    }
+    for (i = 0; i < t.user_two_items.length; ++i) {
+      if (backpack.CanGiveItem(t.user_two_items[i]) != true) {
+        RejectTradeImpl(trade_id);
+        return;
+      }
+    }
+
+    if (!backpack.AllowsItemsReceived(t.user_one) ||
+        !backpack.AllowsItemsReceived(t.user_two)) {
+      RejectTradeImpl(trade_id);
+      return;
+    }
+
+    /* TODO(drblue): There's a whole bunch of validity checking stuff that we need
+     * to do here. Like whether the items will fit in each user's backpack.
+     */
+
+    // This loop swaps items back and forth. It is still not the most optimized
+    // implementation and does not deal with the case where both backpacks are
+    // full. However, it is good enough for demonstration purposes.
+    uint length = t.user_one_items.length;
+    if (t.user_two_items.length > length)
+      length = t.user_two_items.length;
+    for (i = 0; i < length; ++i) {
+      if (i < t.user_one_items.length)
+        backpack.GiveItemTo(t.user_one_items[i], t.user_two);
+      if (i < t.user_two_items.length)
+        backpack.GiveItemTo(t.user_two_items[i], t.user_one);
+    }
+  }
+
+  function RejectTrade(uint256 trade_id) {
+    Trade t = trades[trade_id];
+    if (msg.sender != t.user_two)
+      return;
+
+    RejectTradeImpl(trade_id);
+  }
+
+  function TradeCoordinator(Backpack system) {
+    backpack = system;
+    trades.length = 1;
+  }
+
+  function RejectTradeImpl(uint256 trade_id) private {
+    Trade t = trades[trade_id];
+    delete t.user_one_items;
+    delete t.user_two_items;
+    delete trades[trade_id];
+  }
+
+  Backpack backpack;
+  Trade[] trades;
 }

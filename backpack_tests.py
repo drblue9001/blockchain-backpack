@@ -424,12 +424,47 @@ class PaintCanTest(BackpackTest):
         # The item |texas_id| should have been replaced by |new_texas_id|.
         new_texas_id = self.GetArrayOfItemIdsOfBackpack(tester.a1)[0];
         self.assertNotEquals(new_texas_id, texas_id);
-
-        # TODO(drblue): This fails because SetIntAttribute only works on under
-        # construction items. I haven't created a way to start construction of
-        # a new item number which is a clone of a current item.
         self.assertEquals(self.contract.GetItemIntAttribute(new_texas_id, 142),
                           15185211);
+
+class TradeCoordinatorTest(BackpackTest):
+    def setUp(self):
+        BackpackTest.setUp(self);
+        self.trade = fs.TradeCoordinator.create(self.contract.address,
+                                                sender=tester.k0, state=self.t)
+        self.assertEquals(self.contract.CreateUser(tester.a1), kOK);
+        self.assertEquals(self.contract.CreateUser(tester.a2), kOK);
+
+    def test_can_trade(self):
+        # a1 has a Texas Ten Gallon hat.
+        self.assertEquals(self.contract.SetItemSchema(94, 1, 100, 0), kOK);
+        texas_id = self.contract.CreateNewItem(94, 0, 1, tester.a1);
+        self.contract.FinalizeItem(texas_id);
+
+        # a2 has a Righteous Bison.
+        self.assertEquals(self.contract.SetItemSchema(442, 30, 30, 0), kOK);
+        bison_id = self.contract.CreateNewItem(442, 0, 1, tester.a2);
+        self.contract.FinalizeItem(bison_id);
+
+        self.assertEquals(self.GetArrayOfDefindexOfBackpack(tester.a1), [94]);
+        self.assertEquals(self.GetArrayOfDefindexOfBackpack(tester.a2), [442]);
+
+        # Your hat for my lazer gun. is gud deal m8.
+        self.contract.UnlockItemFor(bison_id, self.trade.address,
+                                    sender=tester.k2);
+        trade_id = self.trade.ProposeTrade([bison_id], tester.a1, [texas_id],
+                                           sender=tester.k2);
+        self.assertNotEquals(0, trade_id);
+
+        # I am a prey species and will accept this trade!
+        self.contract.UnlockItemFor(texas_id, self.trade.address,
+                                    sender=tester.k1);
+        self.trade.AcceptTrade(trade_id, sender=tester.k1);
+
+        # Now a1 has a Righteous Bison and a2 has a Texas Ten Gallon hat.
+        self.assertEquals(self.GetArrayOfDefindexOfBackpack(tester.a1), [442]);
+        self.assertEquals(self.GetArrayOfDefindexOfBackpack(tester.a2), [94]);
+
 
 
 if __name__ == '__main__':
