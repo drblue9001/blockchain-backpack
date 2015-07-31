@@ -427,6 +427,38 @@ class PaintCanTest(BackpackTest):
         self.assertEquals(self.contract.GetItemIntAttribute(new_texas_id, 142),
                           15185211);
 
+
+class RestorePaintJobTest(BackpackTest):
+    def setUp(self):
+        BackpackTest.setUp(self);
+        self.restore = fs.RestorePaintJob.create(sender=tester.k0,
+                                                 state=self.t)
+        self.contract.SetPermission(self.restore.address, 4, True);
+        self.contract.SetAction("RestorePaintJob", self.restore.address);
+        self.assertEquals(self.contract.CreateUser(tester.a1), kOK);
+
+    def test_can_restore_paint_job(self):
+        self.assertEquals(self.contract.SetAttribute(142, "name",
+                                                     "set item tint RGB"),
+                          kOK);
+
+        # a1 has a Texas Ten Gallon hat.
+        self.assertEquals(self.contract.SetItemSchema(94, 1, 100, 0), kOK);
+        texas_id = self.contract.CreateNewItem(94, 0, 1, tester.a1);
+        self.contract.SetIntAttribute(texas_id, 142, 81);
+        self.contract.FinalizeItem(texas_id);
+
+        # Ensure it has paint.
+        self.assertEquals(self.contract.GetItemIntAttribute(texas_id, 142), 81);
+
+        self.contract.DoAction("RestorePaintJob", [texas_id], sender=tester.k1);
+
+        # Ensure it doesn't have paint.
+        new_texas_id = self.GetArrayOfItemIdsOfBackpack(tester.a1)[0];
+        self.assertEquals(self.contract.GetItemIntAttribute(new_texas_id, 142),
+                          0);
+
+
 class TradeCoordinatorTest(BackpackTest):
     def setUp(self):
         BackpackTest.setUp(self);

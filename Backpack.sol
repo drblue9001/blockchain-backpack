@@ -360,11 +360,11 @@ contract Backpack {
   // this item and return it. Otherwise returns 0.
   function OpenForModification(uint64 item_id) returns (uint64) {
     if (!HasPermission(msg.sender, Permissions.AddAttributesToItem))
-      return 1;
+      return 0;
 
     uint256 internal_id = all_items[item_id];
     if (internal_id == 0)
-      return 2;
+      return 0;
 
     ItemInstance item = item_storage[internal_id];
     if (item.state == ItemState.ITEM_EXISTS &&
@@ -393,7 +393,7 @@ contract Backpack {
       return new_item_id;
     }
 
-    return 3;
+    return 0;
   }
 
   function GiveItemTo(uint64 item_id, address recipient) returns (uint64) {
@@ -457,6 +457,39 @@ contract Backpack {
         (item.owner == msg.sender || item.unlocked_for == msg.sender)) {
       for (uint i = 0; i < keys.length; ++i) {
         SetIntAttributeImpl(item.int_attributes, keys[i], values[i]);
+      }
+    }
+  }
+
+  function RemoveIntAttribute(uint64 item_id, uint32 attribute_defindex) {
+    uint256 internal_id = all_items[item_id];
+    if (internal_id == 0)
+      return;
+
+    ItemInstance item = item_storage[internal_id];
+    if (item.state == ItemState.UNDER_CONSTRUCTION &&
+        HasPermission(msg.sender, Permissions.AddAttributesToItem) &&
+        (item.owner == msg.sender || item.unlocked_for == msg.sender)) {
+      // Verify that attribute_defindex is defined.
+      AttributeDefinition a = all_attributes[attribute_defindex];
+      if (a.defindex != attribute_defindex)
+        return;
+
+      // Iterate through all the items and change the value if we already see a
+      // value for this defindex.
+      uint i = 0;
+      uint last = item.int_attributes.length - 1;
+      for (i = 0; i < item.int_attributes.length; ++i) {
+        IntegerAttribute attr = item.int_attributes[i];
+        if (attr.defindex == attribute_defindex) {
+          // If we are not the last item in the list, we copy the last item in
+          // the list to where we are so we don't have holes.
+          if (i != last)
+            attr = item.int_attributes[last];
+
+          item.int_attributes.length--;
+          return;
+        }
       }
     }
   }
@@ -612,36 +645,26 @@ contract Backpack {
     if (recipe == 0)
       return "Item 0 has no recipe";
 
-    // Verify that every input item exists
-    for (uint i = 0; i < item_ids.length; ++i) {
-      uint256 internal_id = all_items[item_ids[i]];
-      if (internal_id == 0)
-        return "Input item doesn't exist";
+    return DoActionImpl(msg.sender, item_ids, recipe);
+  }
 
-      /* TODO(drblue): Need to also verify that everything is owned by the caller
-       * here. */
-    }
+  function SetAction(bytes32 name, address recipe) {
+    if (!HasPermission(msg.sender, Permissions.ModifySchema))
+      return;
 
-    // For every item in item_ids, ensure that it is locked (we're probably
-    // going to be modifying or deleting many of these items), and then do a
-    // local unlock for the recipe.
-    for (i = 0; i < item_ids.length; ++i) {
-      internal_id = all_items[item_ids[i]];
-      EnsureLockedImpl(internal_id, item_ids[i]);
-      UnlockItemFor(item_ids[i], recipe);
-    }
+    actions[name] = recipe;
+  }
 
-    // Actually run the contract.
-    message =
-        MutatingExtensionContract(recipe).MutatingExtensionFunction(item_ids);
+  function DoAction(bytes32 name, uint64[] item_ids)
+      returns (bytes32 message) {
+    // Note: Unlike UseItem, we don't enforce item_ids to contain anything.
 
-    // Finally, iterate over all item_ids. Of the ones that still exist, ensure
-    // that they are locked.
-    for (i = 0; i < item_ids.length; ++i) {
-      internal_id = all_items[item_ids[i]];
-      if (internal_id != 0)
-        EnsureLockedImpl(internal_id, item_ids[i]);
-    }
+    // Find the action recipe from |name|.
+    address recipe = actions[name];
+    if (recipe == 0)
+      return "No such action.";
+
+    return DoActionImpl(msg.sender, item_ids, recipe);
   }
 
   // --------------------------------------------------------------------------
@@ -740,6 +763,41 @@ contract Backpack {
     }
   }
 
+  function DoActionImpl(address owner, uint64[] item_ids, address recipe)
+      private returns (bytes32 message) {
+    // Verify that every input item exists and is owned by caller.
+    for (uint i = 0; i < item_ids.length; ++i) {
+      uint256 internal_id = all_items[item_ids[i]];
+      if (internal_id == 0)
+        return "Input item doesn't exist";
+
+      ItemInstance item = item_storage[internal_id];
+      if (item.owner != owner)
+        return "Sender does not own item.";
+    }
+
+    // For every item in item_ids, ensure that it is locked (we're probably
+    // going to be modifying or deleting many of these items), and then do a
+    // local unlock for the recipe.
+    for (i = 0; i < item_ids.length; ++i) {
+      internal_id = all_items[item_ids[i]];
+      EnsureLockedImpl(internal_id, item_ids[i]);
+      UnlockItemFor(item_ids[i], recipe);
+    }
+
+    // Actually run the contract.
+    message =
+        MutatingExtensionContract(recipe).MutatingExtensionFunction(item_ids);
+
+    // Finally, iterate over all item_ids. Of the ones that still exist, ensure
+    // that they are locked.
+    for (i = 0; i < item_ids.length; ++i) {
+      internal_id = all_items[item_ids[i]];
+      if (internal_id != 0)
+        EnsureLockedImpl(internal_id, item_ids[i]);
+    }
+  }
+
   function EnsureLockedImpl(uint256 internal_id, uint64 item_id) private
       returns(address was_unlocked_for) {
     ItemInstance i = item_storage[internal_id];
@@ -796,6 +854,9 @@ contract Backpack {
 
   // Maps item ids to internal storage ids.
   mapping (uint64 => uint256) private all_items;
+
+  // Extension contracts.
+  mapping (bytes32 => address) private actions;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -822,6 +883,9 @@ contract PaintCan is MutatingExtensionContract {
 
     // Create a new item number since we're making modifications to the item.
     uint64 new_item = backpack.OpenForModification(item_ids[1]);
+    if (new_item == 0)
+      return "Failed to open for modification";
+
     backpack.SetIntAttribute(new_item, 142, tint_rgb);
 
     // Team dependent paints set a second attribute.
@@ -835,6 +899,34 @@ contract PaintCan is MutatingExtensionContract {
 
     // Destroy the paint can.
     backpack.DeleteItem(item_ids[0]);
+    return "OK";
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* RestorePaintJob                                                            */
+/* -------------------------------------------------------------------------- */
+
+contract RestorePaintJob is MutatingExtensionContract {
+  function MutatingExtensionFunction(uint64[] item_ids)
+      external returns (bytes32 message) {
+    Backpack backpack = Backpack(msg.sender);
+
+    if (item_ids.length != 1) return "Wrong number of arguments";
+
+    // "set item tint RGB" is defindex 142.
+    uint64 tint_rgb = backpack.GetItemIntAttribute(item_ids[0], 142);
+    if (tint_rgb == 0)
+      return "Item isn't painted";
+
+    uint64 new_item = backpack.OpenForModification(item_ids[0]);
+    if (new_item == 0)
+      return "Failed to open for modification";
+
+    backpack.RemoveIntAttribute(new_item, 142);
+    backpack.RemoveIntAttribute(new_item, 261);
+    backpack.FinalizeItem(new_item);
+
     return "OK";
   }
 }
