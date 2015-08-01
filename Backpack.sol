@@ -1,19 +1,6 @@
 // TODOs:
 // - Look at changing permissions into a set of method modifiers.
 
-// A contract which can have items unlocked for it. Contracts which have items
-// unlocked for them should derive from this interface; you will receive
-// these messages in response to events.
-//
-// Implementations of this must be very careful to not spend more than {10000}
-// gas.
-//
-// TODO(drblue): Consider reasonable gas limits here.
-contract UnlockedItemHandler {
-  function OnItemUnlocked(address backpack, uint64 item_id) {}
-  function OnItemLocked(address backpack, uint64 item_id) {}
-}
-
 // An extension contract which takes a list of item ids and 
 contract MutatingExtensionContract {
   function MutatingExtensionFunction(uint64[] item_id)
@@ -804,13 +791,6 @@ contract Backpack {
     if (i.unlocked_for != 0) {
       was_unlocked_for = i.unlocked_for;
       i.unlocked_for = 0;
-      // We don't send notification messages during item construction.
-      if (i.state != ItemState.UNDER_CONSTRUCTION) {
-        // TODO(drblue): This should have a .gas(10000) to limit the transaction,
-        // but we can't do that yet. pyethereum complains with "Transaction
-        // Failed" and no other error message.
-        UnlockedItemHandler(was_unlocked_for).OnItemLocked(this, item_id);
-      }
     } else {
       was_unlocked_for = 0;
     }
@@ -819,11 +799,6 @@ contract Backpack {
   function EnsureUnlockedImpl(uint256 internal_id, uint64 item_id,
                               address unlocked_for) private {
     item_storage[internal_id].unlocked_for = unlocked_for;
-
-    // TODO(drblue): This should have a .gas(10000) to limit the transaction,
-    // but we can't do that yet. pyethereum complains with "Transaction
-    // Failed" and no other error message.
-    UnlockedItemHandler(unlocked_for).OnItemUnlocked(this, item_id);
   }
 
   function Backpack() {

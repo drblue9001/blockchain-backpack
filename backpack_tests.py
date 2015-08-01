@@ -348,23 +348,6 @@ class ItemLockingTest(BackpackTest):
         self.assertEquals(0, self.locking_mock.lock_count())
         self.assertEquals(0, self.locking_mock.unlock_count())
 
-    def test_normal_unlocking_re_locking(self):
-        self.assertEquals(self.contract.CreateUser(tester.a1), kOK);
-        self.assertEquals(self.contract.SetItemSchema(5, 50, 50, 0), kOK);
-        id = self.contract.CreateNewItem(5, 0, 1, tester.a1);
-        self.contract.FinalizeItem(id);
-
-        # TODO(drblue): We had failed transactions here when we had ".gas(10000)"
-        # in the backpack source.
-        self.contract.UnlockItemFor(id, self.locking_mock.address,
-                                    sender=tester.k1)
-        self.assertEquals(0, self.locking_mock.lock_count())
-        self.assertEquals(1, self.locking_mock.unlock_count())
-
-        self.contract.LockItem(id, sender=tester.k1)
-        self.assertEquals(1, self.locking_mock.lock_count())
-        self.assertEquals(1, self.locking_mock.unlock_count())
-
     # TODO(drblue): Once I figure out how to get imports working, I should do
     # further tests about what a contract that we've unlocked things for can
     # do.
