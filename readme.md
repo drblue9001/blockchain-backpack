@@ -30,19 +30,19 @@ During this year's April Fools day, the Ethereuem folks put out an announcement 
 
 ## The Problem
 
-Items in Valve's ecconomy are tied to your Steam account. So we have items of real monetary vaule protected only by passwords on Windows machines. Breaking into someone's account and clearing out their virtual items for resale has become an epidemic. (Maybe describe how the fraud works and some of Valve's attempts to dea.)
+Items in Valve's ecconomy are tied to your Steam account. So we have items of real monetary vaule protected only by passwords on Windows machines. Breaking into someone's account and clearing out their virtual items for resale has become an epidemic. (Maybe describe how the fraud works and some of Valve's attempts to deal.)
 
-On top of that, Valve's infrastructure is sometimes unable to deal with the demands placed upon it. Every year, during the Steam Chirstmas sale, things go to hell. The Steam marketplace usually breaks under the transactional load. Trades between players tend to error out during these weeks. Strange weapons in TF2 and StatTrak weapons in CS:GO intermittently stop recording their statistics.
+On top of that, Valve's infrastructure is sometimes unable to deal with the demands placed upon it. Every year, during the Steam Chirstmas sale, things go to hell. The Steam marketplace usually breaks under the transactional load. Trades between players tend to error out during these weeks. Strange weapons in TF2 (and I assume other games) intermittently stop recording their statistics.
 
 This series of articles describe a proof of concept system I've built that decentralizes their item system **in a way that wouldn't threaten Valve's monopoly on item generation**. I propose moving a portion of TF2's backpack system onto the Ethereum blockchain.
 
 ## A quick overview of what we want to buid
 
-In any proposed revamp of an existing system, we want to come as close to a [Pareto improvement][pareto]: everyone should be at least as well off as they are under the current system. This is important because otherwise there is no incentive to change. Valve's item minting monopoly must not be impinged, since this funds further development of the game.
+In any proposed revamp of an existing system, we want to come as close to a [Pareto improvement][pareto]: everyone should be at least as well off as they are under the current system. This is important because otherwise there is no incentive to change. Valve's item minting monopoly must not be impinged, since this funds further development of their games.
 
 If we were going to buid an idealized backpack, what properties should it have?
 
-* Only Valve (or contracts authorized by Valve) should be able to create items,
+* Only Valve (or programs authorized by Valve) should be able to create items,
   and to add code to the system which is able to modify items (paint,
   killstreak kits, strange parts, etc).
 * An item, given to a user, should only be modifiable by that user:
@@ -51,9 +51,12 @@ If we were going to buid an idealized backpack, what properties should it have?
   * Only the user should be able to send an item to another player.
   * A user should be able to subcontract any of these rights.
 
-That last one is key; we'll build the majority fo features in the system based on a user's ability to delegate their authority over an item to another contract.
+We can build a small program (a contract) that does the above, and that is deployed on the Ethereum blockchain. We'll want a main contract for performing storage of items, along with extension interfaces which will allow item modification and futher expansion of the system.
+
+Given that all interactions with this contract are done through digitally signed messages, people's backpack identity becomes a public/private keypair. This brings us to the one thing we won't prototype: dedicated hardware to protect the private key and perform signing of messages that get sent to the backpack system. I will instead hand-wave towards the bitcoin communities hardware wallets which perform a similar function: Trezor, Ledger Wallet, etc.
 
 [pareto]: http://en.wikipedia.org/wiki/Pareto_efficiency
 
-## 
+## The actual prototype
 
+I've created a prototype 
