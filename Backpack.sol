@@ -51,7 +51,7 @@ contract Backpack {
   }
 
   function SetPermission(address user, Permissions permission, bool value)
-      constant returns (bytes32) {
+      returns (bytes32) {
     if (HasPermission(msg.sender, Permissions.SetPermission)) {
       user_data[user].permissions[uint256(permission)] = value;
       return "OK";
@@ -322,12 +322,12 @@ contract Backpack {
   // items which already exist off chain, though it can be used for any fine
   // tune building of an item. If |attribute_key| is non zero, we optimize a
   // call to 
-  function ImportItem(address recipient,
-                      uint32 defindex,
+  function ImportItem(uint32 defindex,
                       uint16 quality,
                       uint16 origin,
                       uint16 level,
-                      uint64 original_id) external
+                      uint64 original_id,
+                      address recipient) external
       returns (uint64) {
     // calculate items
     if (!HasPermission(msg.sender, Permissions.GrantItems))
@@ -503,10 +503,8 @@ contract Backpack {
       return;
 
     ItemInstance item = item_storage[internal_id];
-    if (item.state == ItemState.ITEM_EXISTS &&
-        (item.owner == msg.sender || item.unlocked_for == msg.sender)) {
+    if (item.state == ItemState.ITEM_EXISTS && item.owner == msg.sender)
       EnsureUnlockedImpl(internal_id, item_id, c);
-    }
   }
 
   /// @notice If `item_id` is unlocked, this relocks it.

@@ -129,8 +129,9 @@ for item in backpack_json['items']:
     attr_values.append(attr['value'])
 
   old_id = item["id"]
-  new_id = c.ImportItem(tester.a1, item["defindex"], item["quality"],
-                        item["origin"], item["level"], item["original_id"]);
+  new_id = c.ImportItem(item["defindex"], item["quality"],
+                        item["origin"], item["level"], item["original_id"],
+                        tester.a1);
   print "Imported item id='%s' as id='%s'..." % (item["id"], new_id)
   if attr_keys:
     print " - Importing %s attributes onto %s" % (len(attr_keys), new_id);
