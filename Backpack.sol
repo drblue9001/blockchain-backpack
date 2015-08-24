@@ -197,7 +197,7 @@ contract Backpack {
   struct SchemaItem {
     uint8 min_level;
     uint8 max_level;
-    MutatingExtensionContract recipe;
+    MutatingExtensionContract on_use_contract;
 
     // New values for this item.
     IntegerAttribute[] int_attributes;
@@ -205,7 +205,7 @@ contract Backpack {
   }
 
   function SetItemSchema(uint32 defindex, uint8 min_level, uint8 max_level,
-                         address action_recipe)
+                         address use_contract)
       returns (bytes32 ret) {
     if (!HasPermission(msg.sender, Permissions.ModifySchema))
       return "Permission Denied";
@@ -213,7 +213,7 @@ contract Backpack {
     SchemaItem schema = item_schemas[defindex];
     schema.min_level = min_level;
     schema.max_level = max_level;
-    schema.recipe = MutatingExtensionContract(action_recipe);
+    schema.on_use_contract = MutatingExtensionContract(use_contract);
     return "OK";
   }
 
@@ -626,11 +626,11 @@ contract Backpack {
     // Verify that item_ids[0] has a contract associated with its item.
     uint32 contract_schema_defindex = GetItemDefindex(item_ids[0]);
     SchemaItem contract_schema = item_schemas[contract_schema_defindex];
-    address recipe = contract_schema.recipe;
-    if (recipe == 0)
+    address action = contract_schema.on_use_contract;
+    if (action == 0)
       return "Item 0 has no recipe";
 
-    return DoActionImpl(msg.sender, item_ids, recipe);
+    return DoActionImpl(msg.sender, item_ids, action);
   }
 
   function SetAction(bytes32 name, address recipe) {
@@ -645,11 +645,11 @@ contract Backpack {
     // Note: Unlike UseItem, we don't enforce item_ids to contain anything.
 
     // Find the action recipe from |name|.
-    address recipe = actions[name];
-    if (recipe == 0)
+    address action = actions[name];
+    if (action == 0)
       return "No such action.";
 
-    return DoActionImpl(msg.sender, item_ids, recipe);
+    return DoActionImpl(msg.sender, item_ids, action);
   }
 
   // --------------------------------------------------------------------------
@@ -748,7 +748,7 @@ contract Backpack {
     }
   }
 
-  function DoActionImpl(address owner, uint64[] item_ids, address recipe)
+  function DoActionImpl(address owner, uint64[] item_ids, address action)
       private returns (bytes32 message) {
     // Verify that every input item exists and is owned by caller.
     for (uint i = 0; i < item_ids.length; ++i) {
@@ -763,16 +763,16 @@ contract Backpack {
 
     // For every item in item_ids, ensure that it is locked (we're probably
     // going to be modifying or deleting many of these items), and then do a
-    // local unlock for the recipe.
+    // local unlock for the action.
     for (i = 0; i < item_ids.length; ++i) {
       internal_id = all_items[item_ids[i]];
       EnsureLockedImpl(internal_id, item_ids[i]);
-      UnlockItemFor(item_ids[i], recipe);
+      UnlockItemFor(item_ids[i], action);
     }
 
     // Actually run the contract.
     message =
-        MutatingExtensionContract(recipe).MutatingExtensionFunction(item_ids);
+        MutatingExtensionContract(action).MutatingExtensionFunction(item_ids);
 
     // Finally, iterate over all item_ids. Of the ones that still exist, ensure
     // that they are locked.
@@ -848,8 +848,9 @@ contract PaintCan is MutatingExtensionContract {
     if (tint_rgb == 0)
       return "First item not a paint can.";
 
-    // TODO(drblue): Get a real attribute number for
-    // "capabilities": { "paintable" }
+    // This here is a bit of a hack; the capabilities aren't actually
+    // attributes in the json file; for demonstration purposes, we
+    // just refer to '"capabilities": { "paintable" }' as 999999.
     uint64 is_paintable = backpack.GetItemIntAttribute(item_ids[1], 999999);
     if (is_paintable == 0)
       return "Second item not paintable";

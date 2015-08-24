@@ -5,7 +5,7 @@ The Blockchain Backpack
 
 Valve has one of the few free to play (F2P) monetization models which doesn't feel exploitive. In a F2P game like King.com's Candy Crush, the game is balanced around throwing up barriers to progressing, and then trying to sell one-time consumable items to remove these barriers. In contrast, Valve's Dota 2 and Team Fortress 2 are free to play games where all players are on an even footing. In [the terms of Ramin Shokrizade][topf2p], Candy Crush is a Money Game, while Valve's offerings are Skill Games.
 
-Valve monitizes their F2P games by selling cosmetic items, versions of the free items which additionally track statistics, tickets to and [digital program book][compendium] about the e-sports matches of their games, et cetera. Valve's Kyle Davis did a talk, [In-Game Economies in Team Fortress 2 and Dota 2][davistalk], which is a good overview about how they think about creating player value.
+Valve monitizes their F2P games by selling cosmetic items, versions of the free items which additionally track statistics, tickets to and [digital program books][compendium] about the e-sports matches of their games, et cetera. Valve's Kyle Davis did a talk, [In-Game Economies in Team Fortress 2 and Dota 2][davistalk], which is a good overview about how they think about creating player value.
 
 The majority of these items are tradable between players. The value of an item is not just its cosmetic or utility valule, it also has secondary market resale value. Users created a vibrant trading market with [pricing guides][bptf]. And Valve has [its own official player to player marketplace][scm], which uses real currency.
 
@@ -19,7 +19,7 @@ The majority of these items are tradable between players. The value of an item i
 
 Most people have at least heard of [Bitcoin][bitcoin], and think it a currency. A better model would be to think of it as a secure, shared ledger that has hard coded rules for dealing with a specific currency. Ethereum is one of the many "Bitcoin 2.0" projects being developed to expand the use of secure, distributed ledgers to other purposes.
 
-Instead of having hard coded rules for how to transact the bitcoin currency, Ethereum has a Turing complete scripting language describing how an individuas transactions shoud change the ledger, often described as a "Smart Contract". A user, identified by a public/private keypair, can deploy a contract (a small program) to the Ethereum blockchain. The contract then has an address, and will manage its own state as programmed when users send messages to it.
+Instead of having hard coded rules for how to transact the bitcoin currency, Ethereum has a Turing complete scripting language describing how an individuas transactions shoud change the ledger, often described as a "Smart Contract". A user, identified by a public/private keypair, can deploy a contract (a small program) to the Ethereum blockchain. The contract then has an address, and will manage its own state as programmed when users send digitally signed messages to it.
 
 (For a more technical introduction to the system, please see the [Ethereuem whitepaper][whitepaper]. Most of the code samples in this document are written in [Solidity][sol].)
 
@@ -36,7 +36,9 @@ Items in Valve's ecconomy are tied to your Steam account. So we have items of re
 
 On top of that, Valve's infrastructure is sometimes unable to deal with the demands placed upon it. Every year, during the Steam Chirstmas and Summer sales, things go to hell. The Steam marketplace usually breaks under the transactional load. Trades between players tend to error out during these weeks. Strange weapons in TF2 (and I assume other games) intermittently stop recording their statistics.
 
-This series of articles describe a proof of concept system I've built that decentralizes their item system **in a way that wouldn't threaten Valve's monopoly on item generation**. I propose moving a portion of TF2's backpack system onto the Ethereum blockchain, where people who want extra security for their high value items would be able to opt-in and have item transfers require digital signatures.
+This series of articles describe a proof of concept system I've built that decentralizes their item system **in a way that wouldn't threaten Valve's monopoly on item generation**. I propose moving a portion of TF2's backpack system onto the Ethereum blockchain.
+
+A blockchain is really a decentralized database, solving the issue of intermittent outages of centralized infrastructure. (Which fixes being unable to verify item ownership when Valve's infrastructure fails.) All messages that get incorporated into blocks are digitally signed, often with hardware. (Which fixes many of the security problems around the economy.)
 
 ## A quick overview of what we want to build
 
@@ -99,13 +101,6 @@ If you were to sign up for a Steam API key and access the raw backpack data, you
 	"inventory": 2147483903,
 	"quantity": 1,
 	"origin": 8,
-	"equipped": [
-		{
-			"class": 1,
-			"slot": 8
-		}
-	]
-	,
 	"attributes": [
 		{
 			"defindex": 142,
@@ -198,10 +193,10 @@ So, what can a user do with their item themselves? Well, they could give it to a
 
 ```
 // Give the item to recipient. This will generate a new |item_id|. Returns the
-// new |item_id|. (May only be called the item's owner or unlocked_for.)
+// new |item_id|. (May only be called by the item's owner or unlocked_for.)
 GiveItemTo(uint64 item_id, address recipient) returns (uint64);
 
-// Deletes the item. (May only be called the item's owner or unlocked_for.)
+// Deletes the item. (May only be called by the item's owner or unlocked_for.)
 function DeleteItem(uint64 item_id);
 ```
 
@@ -215,4 +210,4 @@ function UnlockItemFor(uint64 item_id, address c);
 function LockItem(uint64 item_id)
 ```
 
-Believe it or not, we now have everything needed to rebuild the entire game!
+Believe it or not, we now have everything needed to rebuild the entire economy!
