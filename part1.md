@@ -32,13 +32,13 @@ During this year's April Fools day, the Ethereuem folks put out an announcement 
 
 ## The Problem
 
-Items in Valve's ecconomy are tied to your Steam account. So we have items of real monetary vaule protected only by passwords on Windows machines. Breaking into someone's account and clearing out their virtual items for resale has become an epidemic. (Maybe describe how the fraud works and some of Valve's attempts to deal.)
+Items in Valve's ecconomy are tied to your Steam account. So we have items of real monetary vaule protected only by passwords on Windows machines. Breaking into someone's account and clearing out their virtual items for resale has become an epidemic, with dedicated malware attempting to gain control of Steam accounts. Steam support has a extremely poor reputation, so good luck if your account is hijacked.
 
 On top of that, Valve's infrastructure is sometimes unable to deal with the demands placed upon it. Every year, during the Steam Chirstmas and Summer sales, things go to hell. The Steam marketplace usually breaks under the transactional load. Trades between players tend to error out during these weeks. Strange weapons in TF2 (and I assume other games) intermittently stop recording their statistics.
 
-This series of articles describe a proof of concept system I've built that decentralizes their item system **in a way that wouldn't threaten Valve's monopoly on item generation**. I propose moving a portion of TF2's backpack system onto the Ethereum blockchain.
+This series of articles describe a proof of concept system I've built that decentralizes their item system **in a way that wouldn't threaten Valve's monopoly on item generation**.
 
-A blockchain is really a decentralized database, solving the issue of intermittent outages of centralized infrastructure. (Which fixes being unable to verify item ownership when Valve's infrastructure fails.) All messages that get incorporated into blocks are digitally signed, often with hardware. (Which fixes many of the security problems around the economy.)
+I propose moving a portion of TF2's backpack system onto a blockchain, and will use Ethereum as an example. A blockchain is really a decentralized database, solving the issue of intermittent outages of centralized infrastructure. (Which fixes being unable to verify item ownership when Valve's infrastructure fails.) All messages that get incorporated into blocks are digitally signed, often with hardware. (Which fixes many of the security problems around the economy.)
 
 ## A quick overview of what we want to build
 
@@ -84,6 +84,8 @@ function SetPermission(address user, Permissions permission, bool value)
 function HasPermission(address user, Permissions permission)
   constant returns (bool);
 {% endhighlight %}
+
+As written, the keypair which deployed the contract has full rights to do anything; if this system were ever to be deployed, revocable "admin" accounts should be created for routine use, granted the necessary permissions to do their jobs. (The original public/private key should sit in a safe somewhere in case of emergencies.)
 
 When we write a contract representing a Paint Can (we will do so in part 2), we will want to grant it `AddAttributesToItem`. When we write a contrat representing a Crate (part 3), we will want to grant it `GrantItems`, too. The Backpack Expander would receive `BackpackCapacity`. Etc.
 

@@ -5,7 +5,7 @@ In the previous part, we described why we should move parts of Valve's item syst
 
 ## So how does it work today?
 
-There are two sorts of actions taken on items: an item is consumed or otherwise used to modify an item, or a contextual named action is invoked on an item. Painting items is a good example of both: the [paint can][pc] is an example of an item consumed to color an item, and the Restore command is an example of command that removes the effects of the paint can.
+There are two sorts of actions taken on items: an item is consumed or otherwise used to modify/create an item, or a contextual named action is invoked on an item. Painting items is a good example of both: the [paint can][pc] is an example of an item consumed to color an item, and the Restore command is an example of command that removes the effects of the paint can.
 
 [pc]: https://wiki.teamfortress.com/wiki/Paint_Can
 
@@ -109,4 +109,50 @@ bp.AddIntAtributeToItemSchema(5046, 261, 5801378);
 
 ## Removing the paint job
 
-There is another sort of piece of extension code: actions that can be performed on items which don't 
+There is another sort of piece of extension code: actions that can be performed on items which aren't associated with a tool item. Let's look at the mirror of the Paint Can: the restore paint job command:
+
+```
+contract RestorePaintJob is MutatingExtensionContract {
+  function MutatingExtensionFunction(uint64[] item_ids)
+      external returns (bytes32 message) {
+    Backpack backpack = Backpack(msg.sender);
+
+    if (item_ids.length != 1) return "Wrong number of arguments";
+
+    // "set item tint RGB" is defindex 142.
+    uint64 tint_rgb = backpack.GetItemIntAttribute(item_ids[0], 142);
+    if (tint_rgb == 0)
+      return "Item isn't painted";
+
+    uint64 new_item = backpack.OpenForModification(item_ids[0]);
+    if (new_item == 0)
+      return "Failed to open for modification";
+
+    backpack.RemoveIntAttribute(new_item, 142);
+    backpack.RemoveIntAttribute(new_item, 261);
+    backpack.FinalizeItem(new_item);
+
+    return "OK";
+  }
+}
+```
+
+The implementation of this is once again straightforward: Check validity, open for modifications, remove attributes, finalize.
+
+We want to invoke it similarly to painting the item. Ideally:
+
+```
+// As the owner of |painted_item_id|.
+backpack.DoAction("RestorePaintJob", [painted_item_id]);
+```
+
+This is straight-forward to do; we just need to add a registry which associates a static length string with a contract:
+
+```
+// As a user with SetPermission and ModifySchema:
+restore_paint_job_contract = new RestorePaintJob;
+bp.SetPermission(restore_paint_job_contract, Permissions.AddAttributesToItem);
+bp.SetAction("RestorePaintJob", restore_paint_job_contract);
+```
+
+So we now have a way of modifying an item only when the user requests it, and only with code blessed by Valve. These primitives should be able to implement strangifiers, killstreak kits, chemistry sets, custom name and description tags, Halloween spells, and anything else that modifies items in the game.
