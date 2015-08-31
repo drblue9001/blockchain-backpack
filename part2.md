@@ -83,7 +83,7 @@ contract Backpack {  # Continued from last
 }
 ```
 
-We don't need most of the data in the TF2 item schema on chain; all we need is the possible level range (since we can generate items entirely on-chain), and the address of a contract which provides extension code...such as `PaintCan`. We can set up paint can instances:
+We don't need most of the data in the TF2 item schema on chain; all we need is the possible level range (since we can generate items entirely on-chain), and the address of a contract which provides extension code...such as `PaintCan`. We can set up the schema of the paint cans:
 
 ```
 // As a user with SetPermission and ModifySchema:
@@ -106,6 +106,10 @@ bp.AddIntAtributeToItemSchema(5046, 261, 5801378);
 // ...
 // et cetera.
 ```
+
+Now that we have the schema of paint cans set so we can instantiate them and use them, let's describe exactly what `UseItem()` does. It looks at the schema of the first item in the list of incoming ids. If that exists and has a contract, it unlocks all the incoming items for that contract so that contract can modify those items. Then it calls the contract with the item_ids. Then it locks any still existing items after the call.
+
+This lets a user modify their items using code blessed by Valve, only when they wish. And it crams this into a single signed message.
 
 ## Removing the paint job
 
