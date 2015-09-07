@@ -87,7 +87,7 @@ function HasPermission(address user, Permissions permission)
 
 As written, the keypair which deployed the contract has full rights to do anything; if this system were ever to be deployed, revocable "admin" accounts should be created for routine use, granted the necessary permissions to do their jobs. (The original public/private key should sit in a safe somewhere in case of emergencies.)
 
-When we write a contract representing a Paint Can (we will do so in part 2), we will want to grant it `AddAttributesToItem`. When we write a contrat representing a Crate (part 3), we will want to grant it `GrantItems`, too. The Backpack Expander would receive `BackpackCapacity`. Etc.
+When we write a contract representing a Paint Can (we will do so in part 2), we will want to grant it `AddAttributesToItem`. When we write a contrat representing a Crate (part 5), we will want to grant it `GrantItems`, too. The Backpack Expander would receive `BackpackCapacity`. Etc.
 
 ## Representing items
 
