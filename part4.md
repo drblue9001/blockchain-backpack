@@ -21,16 +21,3 @@ The attacker causes the steam client to generate the command to perform the trad
 The flip side is a loss of control. The system as outlined here puts control of items completely in the hands of the user. As outlined in part 2, to execute any code to modify the item, the owner unlock the item for that contract. The implication is that not only could a 3rd party not take or modify a user's items, _Valve_ couldn't take or modify a users items.
 
 There are upsides here. Steam Support's workload should go down significantly, since claims of item theft by users who are using this system are not credible. Likewise, Steam Support could push people to opt-in to this system in return for restoring their stolen items.
-
-
-
-But let's focus on the other part of the attack. Immediately after they took all his high value items, they then played Counterstrike on his account and blatantly cheated. Valve's anticheat (VAC) system immediately caught this and banned his account. This is very clever. Now his account can't receive items and all the items that were left after the theft are untradable. If this hadn't blown up into a big story, it's likely that no one would have believed him as VAC has an undeserved reputation for perfection, and people tend to disbelieve any story involving undeserved VAC bans.
-
-
-(As an aside, I'm surprised that it has taken this long for there to be weaponized use of the free version of LMAOBOX (or its CS:GO equivalent). In this case it was used to cause chaos after a smash and grab. However, I can see other reasons a man of low moral fiber would try to get someone else VACed. Do you have an upcoming eSports match against someone who you suspect might be better than you? Not if you can figure out the password on that other players account and cheat as him first! Do you have an unusual hat that was globally unique until someone unboxed another one? VAC bans make a player's items untradable, preserving the value of your items! Are you a cheater and want to safely use your cheats? Just make sure your cheats are installed on as many innocent people's machines as possible, so Valve can't actually tell the difference between someone who is cheating and someone who is infected! And then there are people who just do things for the lulz.)
-
-
-These attacks happen because 
-
-
-Does this mean that Valve could no longer , 
