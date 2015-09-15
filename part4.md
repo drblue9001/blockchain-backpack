@@ -21,3 +21,5 @@ The attacker causes the steam client to generate the command to perform the trad
 The flip side is a loss of control. The system as outlined here puts control of items completely in the hands of the user. As outlined in part 2, to execute any code to modify the item, the owner unlock the item for that contract. The implication is that not only could a 3rd party not take or modify a user's items, _Valve_ couldn't take or modify a users items.
 
 There are upsides here. Steam Support's workload should go down significantly, since claims of item theft by users who are using this system are not credible. Likewise, Steam Support could push people to opt-in to this system in return for restoring their stolen items.
+
+## TODO: Write about how uncrating is a proof of burn operation.

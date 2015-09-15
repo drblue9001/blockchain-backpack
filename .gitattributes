@@ -1,3 +1,6 @@
 *.json export-ignore
 .gitignore export-ignore
 .gitattributes export-ignore
+notes.org export-ignore
+crate.sol export-ignore
+
