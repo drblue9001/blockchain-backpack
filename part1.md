@@ -17,9 +17,9 @@ The majority of these items are tradable between players. The value of an item i
 
 ## Introduction to Ethereum
 
-Most people have at least heard of [Bitcoin][bitcoin], and think it a currency. A better model would be to think of it as a secure, shared ledger that has hard coded rules for dealing with a specific currency. Ethereum is one of the many "Bitcoin 2.0" projects being developed to expand the use of secure, distributed ledgers to other purposes.
+Most people have at least heard of [Bitcoin][bitcoin], and think it a currency. A better model would be to think of it as a secure, shared database that has hard coded rules for dealing with a specific currency. Ethereum is one of the many "Bitcoin 2.0" projects being developed to expand the use of authenticated, distributed databases to other purposes.
 
-Instead of having hard coded rules for how to transact the bitcoin currency, Ethereum has a Turing complete scripting language describing how an individuas transactions shoud change the ledger, often described as a "Smart Contract". A user, identified by a public/private keypair, can deploy a contract (a small program) to the Ethereum blockchain. The contract then has an address, and will manage its own state as programmed when users send digitally signed messages to it.
+Instead of having hard coded rules for how to transact the bitcoin currency, Ethereum has a Turing complete scripting language describing how an individual transaction should change the ledger. A user, identified by a public/private keypair, can deploy a small program (called a contract) to the Ethereum blockchain. This program then has an address, and will manage its own state as programmed when users send digitally signed messages to it.
 
 (For a more technical introduction to the system, please see the [Ethereuem whitepaper][whitepaper]. Most of the code samples in this document are written in [Solidity][sol].)
 
@@ -36,24 +36,24 @@ Items in Valve's ecconomy are tied to your Steam account. So we have items of re
 
 On top of that, Valve's infrastructure is sometimes unable to deal with the demands placed upon it. Every year, during the Steam Chirstmas and Summer sales, things go to hell. The Steam marketplace usually breaks under the transactional load. Trades between players tend to error out during these weeks. Strange weapons in TF2 (and I assume other games) intermittently stop recording their statistics.
 
-This series of articles describe a proof of concept system I've built that decentralizes their item system **in a way that wouldn't threaten Valve's monopoly on item generation**.
+I write this as a concerned citizen of the Badlands. I am worried about security, as [I own many rare items in TF2][myinv]; I have 15 unusuals, and 7 Australiums. I've tried to direct my worry productively, and thus I've written a series of articles that describe a proof of concept system I've built that decentralizes the Valve item system **in a way that wouldn't threaten Valve's monopoly on item generation**. As a stakeholder in the TF2 economy, it's in my direct interest to not propose solutions that would harm Valve or would negatively impact the economy.
+
+[myinv]: http://steamcommunity.com/id/drblue9001/inventory/#440
 
 I propose moving a portion of TF2's backpack system onto a blockchain, and will use Ethereum as an example. A blockchain is really a decentralized database, solving the issue of intermittent outages of centralized infrastructure. (Which fixes being unable to verify item ownership when Valve's infrastructure fails.) All messages that get incorporated into blocks are digitally signed, often with hardware. (Which fixes many of the security problems around the economy.)
 
 ## A quick overview of what we want to build
 
-In any proposed revamp of an existing system, we want to come as close to a [Pareto improvement][pareto] as possible: everyone should be at least as well off as they are under the current system. This is important because otherwise there is no incentive to change. Valve's item minting monopoly must not be impinged, since this funds further development of their games, and they would have no reason to sign on to a system that hurt them.
+In any proposed revamp of an existing system, we want to come as close to a [Pareto improvement][pareto] as possible: everyone should be at least as well off as they are under the current system. This is important because otherwise there is no incentive to change. Valve's item minting monopoly must not be impinged: it would destabalize the economy and would deny Valve further funds to development of their games. Besides, Valve would never intentionally sign on to a system that hurt them.
 
 If we were going to buid an idealized backpack, what properties should it have?
 
 * Only Valve (or contracts authorized by Valve) should be able to create items,
   and to add code to the system which is able to modify items (paint,
   killstreak kits, strange parts, etc).
-* An item, given to a user, should only be modifiable by that user:
-  * Only modification code blessed by Valve should be run, but only when the
-    user says so.
-  * Only the user should be able to send an item to another player.
-  * A user should be able to subcontract any of these rights.
+* Only the owner of an item should be able to make use of an item:
+  * They should be able to trade it to another player.
+  * They should be able to run Valve blessed modification code.
 
 We can build a small program (a contract) that does the above, and that is deployed on the Ethereum blockchain. We'll want a main contract for performing storage of items, along with extension interfaces which will allow item modification and futher expansion of the system. The entire prototype is [here on github][prototype]; the rest of this article will instead be a high level overview.
 
@@ -134,7 +134,7 @@ If you were to sign up for a Steam API key and access the raw backpack data, you
 },
 ```
 
-An item is thus a few pieces of data: the `original_id` (the ID of this item at creation time), the `id` (the ID of the item currently; changes each time an item is traded or modified), the `defindex` (the type of item), the `level`, `quality` and `origin` (various metadata) and then a set of `attributes`.
+An item is thus a few pieces of data: the `original_id` (the ID of this item at creation time), the `id` (the ID of the item currently; changes each time an item is traded or modified), the `defindex` (the type of item), the `level`, `quality` and `origin` (various metadata) and then a set of `attributes`. Nothing here that couldn't be stored in an alternative way!
 
 (The item above is a [Southie Shinobi][ss] (defindex:30395), painted with [The Value of Teamwork][vot] (defindex:142,261), and with [Spectral Spectrum][spectral] (defindex:1004) applied.)
 
@@ -194,22 +194,28 @@ The creator of an item builds the item, and then adds all the attributes to that
 So, what can a user do with their item themselves? Well, they could give it to another person or delete it:
 
 ```
-// Give the item to recipient. This will generate a new |item_id|. Returns the
-// new |item_id|. (May only be called by the item's owner or unlocked_for.)
-GiveItemTo(uint64 item_id, address recipient) returns (uint64);
+contract Backpack {
+  // Give the item to recipient. This will generate a new |item_id|. Returns
+  // the new |item_id|. (May only be called by the item's owner or
+  // unlocked_for.)
+  GiveItemTo(uint64 item_id, address recipient) returns (uint64);
 
-// Deletes the item. (May only be called by the item's owner or unlocked_for.)
-function DeleteItem(uint64 item_id);
+  // Deletes the item. (May only be called by the item's owner or
+  // unlocked_for.)
+  function DeleteItem(uint64 item_id);
+}
 ```
 
 They can't modify it themselves as they don't have the `AddAttributesToItem` permission, so how would they apply paint (among other things) to their items? Every item has an owner, but it also has an `unlocked_for` user, a person or contract that can act as an item's owner:
 
 ```
-// Temporarily grant |c| access to |item_id|.
-function UnlockItemFor(uint64 item_id, address c);
+contract Backpack {
+  // Temporarily grant |c| access to |item_id|.
+  function UnlockItemFor(uint64 item_id, address c);
 
-// Revoke non-owner access to |item_id|.
-function LockItem(uint64 item_id)
+  // Revoke non-owner access to |item_id|.
+  function LockItem(uint64 item_id)
+}
 ```
 
 Believe it or not, we now have everything needed to rebuild the entire economy!

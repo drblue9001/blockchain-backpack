@@ -3,6 +3,19 @@ Blockchain Item Modification
 
 In the previous part, we described why we should move parts of Valve's item system onto the blockchain and built an interface for the basics of handling items. In part 2, we're going to build the interfaces that would allow Valve to deploy code to modify items.
 
+## More things to do!
+
+First some history.
+
+These game has been built piecewise over multiple years. In the case of Team Fortress 2, first the game launched. Then [the ability to have different weapons][goldrush] was added. Later, the [ability to paint items][mannconomy] was added. As time goes on, there are new ways to modify items.
+
+[[ Continue here. ]]
+
+We don't just need to support the current feature list, but need to build up a way to continue to extend the system. So lets build 
+
+[goldrush]: https://wiki.teamfortress.com/wiki/Gold_Rush_Update
+[mannconomy]: https://wiki.teamfortress.com/wiki/Mann-Conomy_Update
+
 ## So how does it work today?
 
 There are two sorts of actions taken on items: an item is consumed or otherwise used to modify/create an item, or a contextual named action is invoked on an item. Painting items is a good example of both: the [paint can][pc] is an example of an item consumed to color an item, and the Restore command is an example of command that removes the effects of the paint can.
