@@ -322,10 +322,21 @@ contract Backpack {
     if (schema.min_level == 0)
       return 0;
 
-    // TODO(drblue): Calculate level.
+    // Calculate the level. It is OK to use non-secure psuedorandom numbers
+    // here because the item level is purely decorational thing that isn't seen
+    // most of the time and manipulation isn't worth miners colluding. (Unlike
+    // uncrating, where we have to use the pre-commitment trick.)
+    uint16 level = schema.min_level;
+    if (schema.min_level != schema.max_level) {
+      // TODO(drblue): It appears that in pyethereum tester, blockhash(0) is a
+      // constant. This doesn't appear to be the case on the main clients.
+      uint256 range = schema.max_level - schema.min_level;
+      level = uint16(uint256(block.blockhash(0)) % range);
+    }
+
     return CreateItemImpl(defindex, quality, origin, recipient,
                           msg.sender /* unlocked_for */,
-                          schema.min_level /* level */,
+                          level /* level */,
                           0 /* original_id */);
   }
 
