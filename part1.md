@@ -36,15 +36,14 @@ Items in Valve's ecconomy are tied to your Steam account. So we have items of re
 
 On top of that, Valve's infrastructure is sometimes unable to deal with the demands placed upon it. Every year, during the Steam Chirstmas and Summer sales, things go to hell. The Steam marketplace usually breaks under the transactional load. Trades between players tend to error out during these weeks. Strange weapons in TF2 (and I assume other games) intermittently stop recording their statistics.
 
-I write this as a concerned citizen of the Badlands. I am worried about security, as [I own many rare items in TF2][myinv]; I have 15 unusuals, and 7 Australiums. I've tried to direct my worry productively, and thus I've written a series of articles that describe a proof of concept system I've built that decentralizes the Valve item system **in a way that wouldn't threaten Valve's monopoly on item generation**. As a stakeholder in the TF2 economy, it's in my direct interest to not propose solutions that would harm Valve or would negatively impact the economy.
-
-[myinv]: http://steamcommunity.com/id/drblue9001/inventory/#440
+I write this as a concerned citizen of the Badlands. I am worried about security, as [I own many rare items in TF2][myinv]; I have 15 unusuals, and 7 Australiums. I've tried to direct my worry productively, and thus I've written a series of articles that describe a proof of concept system I've built that decentralizes the Valve item system **in a way that wouldn't threaten Valve's monopoly on item generation**. In any proposed revamp of an existing system, we want to come as close to a [Pareto improvement][pareto] as possible: everyone should be at least as well off as they are under the current system. This is important because otherwise there is no incentive to change. Valve's item minting monopoly must not be impinged: it would destabalize the economy and would deny Valve further funds to development of their games. Besides, Valve would never intentionally sign on to a system that hurt them.
 
 I propose moving a portion of TF2's backpack system onto a blockchain, and will use Ethereum as an example. A blockchain is really a decentralized database, solving the issue of intermittent outages of centralized infrastructure. (Which fixes being unable to verify item ownership when Valve's infrastructure fails.) All messages that get incorporated into blocks are digitally signed, often with hardware. (Which fixes many of the security problems around the economy.)
 
-## A quick overview of what we want to build
+[myinv]: http://steamcommunity.com/id/drblue9001/inventory/#440
+[pareto]: http://en.wikipedia.org/wiki/Pareto_efficiency
 
-In any proposed revamp of an existing system, we want to come as close to a [Pareto improvement][pareto] as possible: everyone should be at least as well off as they are under the current system. This is important because otherwise there is no incentive to change. Valve's item minting monopoly must not be impinged: it would destabalize the economy and would deny Valve further funds to development of their games. Besides, Valve would never intentionally sign on to a system that hurt them.
+## A quick overview of what we want to build
 
 If we were going to buid an idealized backpack, what properties should it have?
 
@@ -55,11 +54,12 @@ If we were going to buid an idealized backpack, what properties should it have?
   * They should be able to trade it to another player.
   * They should be able to run Valve blessed modification code.
 
-We can build a small program (a contract) that does the above, and that is deployed on the Ethereum blockchain. We'll want a main contract for performing storage of items, along with extension interfaces which will allow item modification and futher expansion of the system. The entire prototype is [here on github][prototype]; the rest of this article will instead be a high level overview.
+We can build a small program (a contract) that does the above, and that is deployed on the Ethereum blockchain. We'll want a main contract for performing storage of items, along with extension interfaces which will allow item modification and futher expansion of the system. The entire prototype is [here on github][prototype]; the rest of this article will instead be a high level overview of the software interface.
 
-Given that all interactions with this contract are done through digitally signed messages, people's backpack identity becomes a public/private keypair. This brings us to the one thing we won't prototype: dedicated hardware to protect the private key and perform signing of messages that get sent to the backpack system. I will instead hand-wave towards the Bitcoin communities hardware wallets which perform a similar function: [Trezor][trezor], [Ledger Wallet][ledger], etc.
+<image style="float:right" src="trezor.jpg" />
 
-[pareto]: http://en.wikipedia.org/wiki/Pareto_efficiency
+Given that all interactions with this contract are done through digitally signed messages, people's backpack identity becomes a public/private keypair. This brings us to the one thing we won't prototype: dedicated hardware to protect the private key and perform signing of messages that get sent to the backpack system. Given the prevalence of remote access trojans as a way to bypass Valve's existing two-factor authentication, any system that relies on the security of a user's desktop is non-starter. I will instead hand-wave towards the Bitcoin communities hardware wallets which perform a similar function: [Trezor][trezor], [Ledger Wallet][ledger], Smart cards with secure elements, etc. Steam would prepare a transaction request and would send it to the signing hardware. The signing hardware would show the transaction to the user on an embedded screen. The user would have to physically press a button on the signing hardware to sign the proposed transaction.
+
 [trezor]: https://www.bitcointrezor.com/
 [ledger]: https://www.ledgerwallet.com/
 
