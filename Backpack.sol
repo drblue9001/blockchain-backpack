@@ -829,9 +829,9 @@ contract Backpack {
     item_storage.length = 1;
 
     // As a way of having items both on chain, and off chain, compromise and
-    // say that the item ids are all off chain until item 4000000000, then all
+    // say that the item ids are all off chain until item 5000000000, then all
     // even numbers are on chain, and all odd numbers are off chain.
-    next_item_id = 4000000000;
+    next_item_id = 5000000000;
   }
 
   address private owner;
