@@ -67,7 +67,7 @@ Given that all interactions with this contract are done through digitally signed
 
 ## Representing permissions
 
-Different users must have different capabilities. For instance, a random person with a backpack should not be able to create items out of thin air. We should create a system of permissions to enforce the principle of least privilege.
+In a system where different users interact with the same program, we need a way of keeping track of what users have which capabilities. For instance, a random person with a backpack should not be able to create items out of thin air. We should create a system of permissions to enforce the principle of least privilege.
 
 {% highlight solidity %}
 enum Permissions {
@@ -134,7 +134,7 @@ If you were to sign up for a Steam API key and access the raw backpack data, you
 },
 ```
 
-An item is thus a few pieces of data: the `original_id` (the ID of this item at creation time), the `id` (the ID of the item currently; changes each time an item is traded or modified), the `defindex` (the type of item), the `level`, `quality` and `origin` (various metadata) and then a set of `attributes`. Nothing here that couldn't be stored in an alternative way!
+An item is thus a few pieces of data: the `original_id` (the ID of this item at creation time), the `id` (the ID of the item currently; changes each time an item is traded or modified), the `defindex` (the type of item), the `level`, `quality` and `origin` (various metadata) and then a set of `attributes`. All of this could be stored in a different medium.
 
 (The item above is a [Southie Shinobi][ss] (defindex:30395), painted with [The Value of Teamwork][vot] (defindex:142,261), and with [Spectral Spectrum][spectral] (defindex:1004) applied.)
 
@@ -144,9 +144,9 @@ An item is thus a few pieces of data: the `original_id` (the ID of this item at 
 
 So when building an item on our representation, we'll want a few things:
 
-* The ability to create a new item / import an existing one.
-* The ability to add attributes to it.
-* The ability to close it for modification.
+* The ability to create a new item / import an existing one in a state where the creator can add attributes to it.
+* The ability for the creator to add attributes to it.
+* The ability for the creator to close it for modification.
 
 ```
 contract Backpack {
@@ -171,8 +171,10 @@ contract Backpack {
   // and ready to be used. No further modifications can be made to this item.
   function FinalizeItem(uint64 item_id);
 
-  // (There is one more method that 'creates' a new item_id, but we'll wait
-  // until part 2 to describe it.)
+  // When |item_id| exists, and the item is unlocked for the caller and the
+  // caller has Permissions.AddAttributesToItem, create a new item number for
+  // this item and return it. Otherwise returns 0.
+  function OpenForModification(uint64 item_id) returns (uint64);
 }
 ```
 
@@ -219,3 +221,22 @@ contract Backpack {
 ```
 
 Believe it or not, we now have everything needed to rebuild the entire economy!
+
+## Users unlocking items for modification
+
+In the Valve item system, whenever an item is modified, it gets a new item id. This seems like 
+
+```
+// As the owner of an item:
+bp.UnlockItemFor(my_item_id, a_valve_contract);
+// [An invocation of a_valve_contract].
+
+// Inside the implementation of |a_valve_contract|:
+new_item = bp.OpenForModification(my_item_id);
+bp.SetIntAttribute(new_item, xxx, yyyyyy);
+bp.FinalizeItem(new_item)
+```
+
+So we have the entire lifecycle of an item here. We can import them / create them. And then the user can give access to the item to a valve published contract which will create a new item id, and modify the user's item.
+
+But what would a contract that adds attributes to an item look like?. We'll explore that in Part 2...

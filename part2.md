@@ -7,16 +7,12 @@ In the previous part, we described why we should move parts of Valve's item syst
 
 First some history.
 
-These game has been built piecewise over multiple years. In the case of Team Fortress 2, first the game launched. Then [the ability to have different weapons][goldrush] was added. Later, the [ability to paint items][mannconomy] was added. As time goes on, there are new ways to modify items.
-
-[[ Continue here. ]]
-
-We don't just need to support the current feature list, but need to build up a way to continue to extend the system. So lets build 
+These games have been built piecewise over multiple years. In the case of Team Fortress 2, first the game launched. Then [the ability to have different weapons][goldrush] was added. Later, the [ability to paint items][mannconomy] was added. As time went on, they added new ways to modify items, and I expect that we'll see many more new ways to modify items in the future. We don't just need to support the current feature list, but need to build up a way to continue to extend the system. So let's make some general interfaces.
 
 [goldrush]: https://wiki.teamfortress.com/wiki/Gold_Rush_Update
 [mannconomy]: https://wiki.teamfortress.com/wiki/Mann-Conomy_Update
 
-## So how does it work today?
+## Painting as an example
 
 There are two sorts of actions taken on items: an item is consumed or otherwise used to modify/create an item, or a contextual named action is invoked on an item. Painting items is a good example of both: the [paint can][pc] is an example of an item consumed to color an item, and the Restore command is an example of command that removes the effects of the paint can.
 
@@ -122,7 +118,7 @@ bp.AddIntAtributeToItemSchema(5046, 261, 5801378);
 
 Now that we have the schema of paint cans set so we can instantiate them and use them, let's describe exactly what `UseItem()` does. It looks at the schema of the first item in the list of incoming ids. If that exists and has a contract, it unlocks all the incoming items for that contract so that contract can modify those items. Then it calls the contract with the item_ids. Then it locks any still existing items after the call.
 
-This lets a user modify their items using code blessed by Valve, only when they wish. And it crams this into a single signed message.
+This lets a user modify their items using code blessed by Valve, only when they wish. And it crams this user request into a single signed message.
 
 ## Removing the paint job
 
