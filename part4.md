@@ -1,9 +1,9 @@
-Interlude: Current Events and Why these Things have Value
----------------------------------------------------------
+Interlude: Current Events and The Tradeoffs Being Made
+------------------------------------------------------
 
-In part 1, I talked about how everyone should be at least as well off under a new proposed system as they would be under the old one. I assert that Valve would be better off under this system than they are now, but we need to be clear about what tradeoffs are involved here. Valve would be trading the ability to make arbitrary changes to the item database for increased security.
+In part 1, I talked about how everyone should be at least as well off under a new proposed system as they would be under the old one. I assert that Valve would be better off under this system than they are now, but we need to be clear about what tradeoffs are involved here. Valve would be trading the ability to make arbitrary changes to the item database for increased security. This is a beneficial trade off.
 
-Valve does not have a good track record regarding security. Off the top of my head: they had the gem duping disaster in December which required a partial market rollback, they've had several item duping problems (which makes me wonder about how atomic operations are in their item database), they've had multiple remote code execution bugs, and there have been multiple problems with their user authentication system, including the recent Steam Guard bypass.
+Valve does not have a good track record regarding security. Off the top of my head: they had the gem duping disaster in December which required a partial market rollback, they've had several other item duping problems (which makes me wonder about how atomic transactions are in their item database), they've had multiple remote code execution bugs, and there have been multiple problems with their user authentication system, including the recent Steam Guard bypass.
 
 Let's talk about current events.
 
@@ -18,8 +18,20 @@ The attacker causes the steam client to generate the command to perform the trad
 
 [trezor]: https://www.bitcointrezor.com/
 
-The flip side is a loss of control. The system as outlined here puts control of items completely in the hands of the user. As outlined in part 2, to execute any code to modify the item, the owner unlock the item for that contract. The implication is that not only could a 3rd party not take or modify a user's items, _Valve_ couldn't take or modify a users items.
+From a security standpoint, _something_ like the system I'm outlining is needed to stop the rampant hacking, but this system has costs to everyone, and it is important to consider the tradeoffs being made here.
 
-There are upsides here. Steam Support's workload should go down significantly, since claims of item theft by users who are using this system are not credible. Likewise, Steam Support could push people to opt-in to this system in return for restoring their stolen items.
+From the user standpoint, there's a loss of convenience. While the trade conformation emails Valve currently sends aren't exactly convenient, it does mean you can trade from anywhere you have a browser. With the system I'm proposing, you'd have to have a dedicated hardware dongle to sign transactions.
 
-## TODO: Write about how uncrating is a proof of burn operation.
+Likewise, the user is now on the hook for paying transaction fees to the Ethereum network. I personally am fine with paying a couple of cents per transaction, especially to protect my hundreds of dollars of Unusuals, but this does mean that it will never make economic sense for the majority of free item drops, which are worth a penny, if that.
+
+Likewise, there's the cost of hardware. I assume that Valve could manufacture hardware much cheaper than any of the current Bitcoin hardware wallets. This would still be a cost for the users. It's one that I'd pay, and that I think many people would be willing to pay for, but it is still an up front cost.
+
+Finally, the user is on the hook for security of their encryption key. A user could fail to back their key up or could leak it to the internet. Both are catastrophic failure modes. One possible mitigation is to set the key at the factory and ship a copy of the key engraved metal.
+
+From Valve's point of view, there are also downsides. Given that it doesn't make economic sense for items worth under a penny to go on chain, the current centralized item system probably has to stay. Interoperability becomes a consideration and would make any actual production ready system become more complex.
+
+Valve currently doesn't gain any revenue from the high end unusual market as their Steam Marketplace will only accept sell orders up to $400. (For reference, a Golden Frying Pan usually goes for over $2000. A Showstopper Conga goes for $800. And don't even _look_ at what Burning Team Captains go for!) Trading these large items on chain would be safer, without the chargeback risk that comes with PayPal.
+
+However, the Steam Marketplace does transact in lower value items, and Valve takes 15%. There are already 3rd party sellers of TF2 items who settle in fiat money, and this hasn't supplanted the official Marketplace. It's unlikely that any 3rd party marketplace built that interacts with the blockchain would take a large bite out of market profits, but it's still a risk that should be listed.
+
+Finally, Valve has a policy of retroactively modifying a player's items to be untradable if they're caught hacking, which would generally be circumvented if something like this was deployed. I suspect that in practice this wouldn't be much of a change. People using LMAOBOX Free (which Valve can detect) usually appear to be hacking with five minute old Steam accounts, which have no items and will probably last another ten to thirty minutes before being VACed. People hacking while wearing unusuals or wielding Australium weapons are highly likely to be using the subscription LMAOBOX Premium, which Valve cannot detect. I suspect that this change would not much effect on the number of premium items that leave the economy due to being VACed.
