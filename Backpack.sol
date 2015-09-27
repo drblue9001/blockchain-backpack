@@ -997,13 +997,13 @@ contract TradeCoordinator {
       return;
     }
 
-    /* TODO(drblue): There's a whole bunch of validity checking stuff that we need
-     * to do here. Like whether the items will fit in each user's backpack.
-     */
+    // There's a whole lot of validity checking stuff that needs to be done
+    //  here for a real implementation. (Like whether the items will fit in
+    //  each user's backpack.)  This loop swaps items back and forth. It is
+    //  still not the most optimized implementation and does not deal with the
+    //  case where both backpacks are full. However, it is good enough for
+    //  demonstration purposes.
 
-    // This loop swaps items back and forth. It is still not the most optimized
-    // implementation and does not deal with the case where both backpacks are
-    // full. However, it is good enough for demonstration purposes.
     uint length = t.user_one_items.length;
     if (t.user_two_items.length > length)
       length = t.user_two_items.length;

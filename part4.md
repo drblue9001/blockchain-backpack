@@ -3,6 +3,7 @@ Interlude: Current Events and The Tradeoffs Being Made
 
 In part 1, I talked about how everyone should be at least as well off under a new proposed system as they would be under the old one. I assert that Valve would be better off under this system than they are now, but we need to be clear about what tradeoffs are involved here. Valve would be trading the ability to make arbitrary changes to the item database for increased security. This is a beneficial trade off.
 
+[[ consider cutting next paragraph ]]
 Valve does not have a good track record regarding security. Off the top of my head: they had the gem duping disaster in December which required a partial market rollback, they've had several other item duping problems (which makes me wonder about how atomic transactions are in their item database), they've had multiple remote code execution bugs, and there have been multiple problems with their user authentication system, including the recent Steam Guard bypass.
 
 Let's talk about current events.
@@ -14,7 +15,7 @@ As I'm writing this, the security problem of the week appears to be [some sort o
 These attacks happen because having access to a user's computer is all you need to steal their items. Installing a remote control trojan gives you access to a user's logged in Steam interface. Since most users stay logged in to their webmail, the trade confirmation emails will only stop purely automated attacks.
 
 Contrast this with the system I'm proposing, using dedicated [Trezor][trezor]-like hardware for signing digital messages. 
-The attacker causes the steam client to generate the command to perform the trade, which is then displayed on the screen of the signing hardware. To actually digitally sign the command to perform the trade, the user has to actually press a button on the signing hardware, where the trade would also be displayed on the signing hardware's screen. This makes large classes of current attacks impossible.
+The attacker causes the steam client to generate the command to perform the trade, which is then displayed on the screen of the signing hardware. To actually digitally sign the command to perform the trade, the user has to actually press a button on the signing hardware, where the trade would also be displayed on the signing hardware's screen. This makes large classes of current attacks impossible, which lowers Valve's support costs and stops the inflation caused by Steam Support duped items.
 
 [trezor]: https://www.bitcointrezor.com/
 
