@@ -1,3 +1,7 @@
+---
+layout: default
+---
+
 Interlude: Current Events and The Tradeoffs Being Made
 ------------------------------------------------------
 

@@ -11,7 +11,7 @@ The system is described in the following series of blog posts.
 
 While all the code is Apache 2.0 licensed, this isn't a real project; it is proof of concept to show that such a system is possible, and a sequence of blog posts showing why it is desirable.
 
-If you actually want to build a full version of the system I'm outlining, I suggest that you actually throw away everything I've written (except maybe the interface outlined her), and start over.
+If you actually want to build a full version of the system I'm outlining, I suggest that you actually throw away everything I've written (except maybe the interface outlined here), and start over.
 
 ## Requirements
 

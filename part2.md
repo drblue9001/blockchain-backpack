@@ -1,9 +1,13 @@
-Blockchain Item Modification
-----------------------------
+---
+layout: default
+---
+
+Extension and Blockchain Item Modification
+------------------------------------------
 
 In the previous part, we described why we should move parts of Valve's item system onto the blockchain and built an interface for the basics of handling items. In part 2, we're going to build the interfaces that would allow Valve to deploy code to modify items.
 
-## More things to do!
+### More things to do!
 
 First some history.
 
@@ -12,17 +16,17 @@ These games have been built piecewise over multiple years. In the case of Team F
 [goldrush]: https://wiki.teamfortress.com/wiki/Gold_Rush_Update
 [mannconomy]: https://wiki.teamfortress.com/wiki/Mann-Conomy_Update
 
-## Painting as an example
+### Painting as an example
 
 There are two sorts of actions taken on items: an item is consumed or otherwise used to modify/create an item, or a contextual named action is invoked on an item. Painting items is a good example of both: the [paint can][pc] is an example of an item consumed to color an item, and the Restore command is an example of command that removes the effects of the paint can.
 
 [pc]: https://wiki.teamfortress.com/wiki/Paint_Can
 
-## Show me the code.
+### Show me the code.
 
 Using a Paint Can copies some attributes from the Paint Can to the target item, then consumes the Paint Can. Let's jump into the deep end of the pool and eventually write the lifeguard:
 
-```
+```cpp
 contract PaintCan is MutatingExtensionContract {
   function MutatingExtensionFunction(uint64[] item_ids)
       external returns (bytes32 message) {
@@ -68,15 +72,15 @@ contract PaintCan is MutatingExtensionContract {
 
 This is obviously an implementation of an interface. Ideally, how would a user invoke this contract?
 
-```
+```cpp
 // As a user who owns |paint_can_id| and |painted_item_id|:
 backpack.UseItem([paint_can_id, item_to_paint_id]);
 ```
 
 We can have these sort of shorthand semantics by associating a piece of extension code with an item. Up until this point, I haven't mentioned how much of the TF2 item schema would have to be written onto the blockchain, versus served traditionally.
 
-```
-contract Backpack {  # Continued from last
+```cpp
+contract Backpack {    // Continued from last
   // Sets the min_level, max_level and acction_recipe.
   function SetItemSchema(uint32 defindex, uint8 min_level, uint8 max_level,
                          address use_contract);
@@ -94,7 +98,7 @@ contract Backpack {  # Continued from last
 
 We don't need most of the data in the TF2 item schema on chain; all we need is the possible level range (since we can generate items entirely on-chain), and the address of a contract which provides extension code...such as `PaintCan`. We can set up the schema of the paint cans:
 
-```
+```cpp
 // As a user with SetPermission and ModifySchema:
 paint_can_contract = new PaintCan;
 bp.SetPermission(paint_can_contract, Permissions.AddAttributesToItem);
@@ -120,11 +124,11 @@ Now that we have the schema of paint cans set so we can instantiate them and use
 
 This lets a user modify their items using code blessed by Valve, only when they wish. As each transaction needs a separate button press on the theoretical signing hardware, we want this user request to be a single signed message.
 
-## Removing the paint job
+### Removing the paint job
 
 There is another sort of piece of extension code: actions that can be performed on items which aren't associated with a tool item. Let's look at the mirror of the Paint Can: the restore paint job command:
 
-```
+```cpp
 contract RestorePaintJob is MutatingExtensionContract {
   function MutatingExtensionFunction(uint64[] item_ids)
       external returns (bytes32 message) {
@@ -154,14 +158,14 @@ The implementation of this is once again straightforward: Check validity, open f
 
 We want to invoke it similarly to painting the item, in a single message. Ideally:
 
-```
+```cpp
 // As the owner of |painted_item_id|.
 backpack.DoAction("RestorePaintJob", [painted_item_id]);
 ```
 
 This is straight-forward to do; we just need to add a registry which associates a static length string with a contract:
 
-```
+```cpp
 // As a user with SetPermission and ModifySchema:
 restore_paint_job_contract = new RestorePaintJob;
 bp.SetPermission(restore_paint_job_contract, Permissions.AddAttributesToItem);

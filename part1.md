@@ -1,7 +1,11 @@
-The Blockchain Backpack
------------------------
+---
+layout: default
+---
 
-## Introduction to Valve
+Part 1: Introduction: The Blockchain Backpack
+---------------------------------------------
+
+### Introduction to Valve
 
 Valve has one of the few free to play (F2P) monetization models which doesn't feel exploitive. In a F2P game like King.com's Candy Crush, the game is balanced around throwing up barriers to progressing, and then trying to sell one-time consumable items to remove these barriers. In contrast, Valve's Dota 2 and Team Fortress 2 are free to play games where all players are on an even footing. In [the terms of Ramin Shokrizade][topf2p], Candy Crush is a Money Game, while Valve's offerings are Skill Games.
 
@@ -15,7 +19,7 @@ The majority of these items are tradable between players. The value of an item i
 [bptf]: https://backpack.tf/
 [scm]: http://steamcommunity.com/market
 
-## Introduction to Ethereum
+### Introduction to Ethereum
 
 Most people have at least heard of [Bitcoin][bitcoin], and think it a currency. A better model would be to think of it as a secure, shared database that has hard coded rules for dealing with a specific currency. Ethereum is one of the many "Bitcoin 2.0" projects being developed to expand the use of authenticated, distributed databases to other purposes.
 
@@ -30,7 +34,7 @@ During this year's April Fools day, the Ethereum folks put out an announcement [
 [sol]: https://github.com/ethereum/wiki/wiki/Solidity-Tutorial
 [fool]: https://blog.ethereum.org/2015/04/01/ethereums-unexpected-future-direction/
 
-## The Problem
+### The Problem
 
 Items in Valve's ecconomy are tied to your Steam account. So we have items of real monetary vaule protected only by passwords on Windows machines. Breaking into someone's account and clearing out their virtual items for resale has become an epidemic, with dedicated malware attempting to gain control of Steam accounts. Steam support has a extremely poor reputation, so good luck if your account is hijacked.
 
@@ -47,10 +51,10 @@ I propose moving a portion of TF2's backpack system onto a blockchain, and will 
 
 If you were to sign up for a Steam API key and access the raw backpack data, you'd be left with an array of things like this (I've censored out ID numbers here):
 
-```
+```json
 {
-	"id": XXXXXXXXXX,
-	"original_id": XXXXXXXXXX,
+	"id": 1111111,
+	"original_id": 1111111,
 	"defindex": 30395,
 	"level": 69,
 	"quality": 6,
@@ -84,8 +88,7 @@ If you were to sign up for a Steam API key and access the raw backpack data, you
 			"float_value": 64
 		}
 	]
-	
-},
+}
 ```
 
 (The item above is a [Southie Shinobi][ss] (defindex:30395), painted with [The Value of Teamwork][vot] (defindex:142,261), and with [Spectral Spectrum][spectral] (defindex:1004) applied.)
@@ -98,7 +101,7 @@ All of this could be stored in a different medium. We could write an Ethereum co
 [vot]: https://wiki.teamfortress.com/wiki/Paint_Can
 [spectral]: https://wiki.teamfortress.com/wiki/Spectral_Spectrum_(halloween_spell)
 
-## A quick overview of what we want to build
+### A quick overview of what we want to build
 
 If we were going to buid an idealized backpack, what properties should it have?
 
@@ -111,20 +114,20 @@ If we were going to buid an idealized backpack, what properties should it have?
 
 We can build an Ethereum contract that does the above (part 1), and add hooks so Valve can continue to deploy new features. The main contract will perform the core storage of items, authentication, and known extension contracts for item modification and futher expansion of the system. The entire prototype is [here on github][prototype]; the rest of this article will instead be a high level overview of the software interface.
 
-<image style="float:right" src="trezor.jpg" />
+<image style="float:right; width: 200px; margin: 10px;" src="trezor.jpg" />
 
-Given that all interactions with this contract are done through digitally signed messages, people's backpack identity becomes a public/private keypair. This brings us to the one thing we won't prototype: dedicated hardware to protect the private key and perform signing of messages that get sent to the backpack system. Given the prevalence of remote access trojans as a way to bypass Valve's existing two-factor authentication, any system that relies on the security of a user's desktop is non-starter. I will instead hand-wave towards the Bitcoin communities hardware wallets which perform a similar function: [Trezor][trezor], [Ledger Wallet][ledger], Smart cards with secure elements, etc. Steam would prepare a transaction request and would send it to the signing hardware. The signing hardware would show the transaction to the user on an embedded screen. The user would have to physically press a button on the signing hardware to sign the proposed transaction.
+Given that all interactions with this contract are done through digitally signed messages, people's backpack identity becomes a public/private keypair. This brings us to the one thing we won't prototype: dedicated hardware to protect the private key and perform signing of messages that get sent to the backpack system. Given the prevalence of remote access trojans as a way to bypass Valve's existing two-factor authentication, any system that relies on the security of a user's desktop is non-starter. I will instead hand-wave towards the Bitcoin communities hardware wallets which perform a similar function: [Trezor][trezor] (shown right), [Ledger Wallet][ledger], smart cards with secure elements, etc. Steam would prepare a transaction request and would send it to the signing hardware. The signing hardware would show the transaction to the user on an embedded screen. The user would have to physically press a button on the signing hardware to sign the proposed transaction.
 
 [trezor]: https://www.bitcointrezor.com/
 [ledger]: https://www.ledgerwallet.com/
 
 [prototype]: FILL_ME_IN_LATER
 
-## Representing permissions
+### Representing permissions
 
 All users will interact with the central backpack contract. In a system where different users interact with the same program, we need a way of keeping track of what users have which capabilities. For instance, a random person with a backpack should not be able to create items out of thin air. We should create a system of permissions to enforce the principle of least privilege.
 
-```
+```cpp
 enum Permissions {
   SetPermission,
   BackpackCapacity,
@@ -144,13 +147,13 @@ As written, the keypair which deployed the contract has full rights to do anythi
 
 When we write a contract representing a Paint Can (we will do so in part 2), we will want to grant it `AddAttributesToItem`. When we write a contrat representing a Crate (part 5), we will want to grant it `GrantItems`, too. The Backpack Expander would receive `BackpackCapacity`. Etc.
 
-## The flow of Valve granting an item
+### The flow of Valve granting an item
 
 Right now, there are _a lot_ of preexisting items in the TF2 universe which could be migrated off the centralized database and onto the decentralized blockchain. But what would the programmatic interface look like?
 
 Let's start delving into the interface our contract exposes:
 
-```
+```cpp
 contract Backpack {
   // Used to create new items. If the caller has permission to make new items,
   // create one with the following properties and keep it in the construction
@@ -182,7 +185,7 @@ contract Backpack {
 
 If we wanted to import the above item onto the blockchain backpack, assuming we had the correct permissions, we would issue:
 
-```
+```cpp
 // As a user who has the GrantItems and AddAttributesToItem permissions.
 id = bp.ImportItem(30395, 6, 8, 69, xxxxxx, recipient_address);
 bp.SetIntAttribute(id, 142, 1258303520);
@@ -195,11 +198,11 @@ The creator of an item builds the item, and then adds all the attributes to that
 
 (Why do it this way? Because we want to minimize the number of parameters to a single function. This may have been due to me starting this project when the compiler was in pre-alpha, but I had some issues with overflowing the local variable stack when I passed too many parameters. This influenced the design of this prototype, and may not be necessary anymore.)
 
-## User commands
+### User commands
 
 So, what can a user do with their item themselves? Well, they could give it to another person or delete it:
 
-```
+```cpp
 contract Backpack {
   // Give the item to recipient. This will generate a new |item_id|. Returns
   // the new |item_id|. (May only be called by the item's owner or
@@ -214,7 +217,7 @@ contract Backpack {
 
 They can't modify it themselves as they don't have the `AddAttributesToItem` permission, so how would they apply paint (among other things) to their items? Every item has an owner, but it also has an `unlocked_for` user, a person or contract that can temporarily act as an item's owner:
 
-```
+```cpp
 contract Backpack {
   // Temporarily grant |c| access to |item_id|.
   function UnlockItemFor(uint64 item_id, address c);
@@ -226,11 +229,11 @@ contract Backpack {
 
 Believe it or not, we now have everything needed to rebuild the entire economy!
 
-## Users unlocking items for modification
+### Users unlocking items for modification
 
 In the Valve item system, whenever an item is modified, it gets a new item id. This seems like 
 
-```
+```cpp
 // As the owner of an item:
 bp.UnlockItemFor(my_item_id, a_valve_contract);
 // [An invocation of a_valve_contract].

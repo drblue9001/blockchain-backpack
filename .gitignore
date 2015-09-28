@@ -5,3 +5,5 @@
 *.pyc
 .sync
 *.elc
+_site
+.sass-cache
