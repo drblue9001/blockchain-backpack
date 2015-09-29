@@ -172,4 +172,6 @@ bp.SetPermission(restore_paint_job_contract, Permissions.AddAttributesToItem);
 bp.SetAction("RestorePaintJob", restore_paint_job_contract);
 ```
 
+(And we can call SetItemSchema() / SetAction() on the same item index / action string as many times as necessary to update what code should be run. Which is pretty good since both contracts as written have subtle bugs! Can you spot them? Hint: the restore contract's bug is similar to a bug Valve made regarding killstreak kits recently.)
+
 So we now have a way of modifying an item only when the user requests it, and only with code blessed by Valve. These primitives should be able to implement strangifiers, killstreak kits, chemistry sets, custom name and description tags, Halloween spells, and anything else that modifies items in the game.

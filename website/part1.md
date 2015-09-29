@@ -11,7 +11,7 @@ Valve has one of the few free to play (F2P) monetization models which doesn't fe
 
 Valve monitizes their F2P games by selling cosmetic items, versions of the free items which additionally track statistics, tickets to and [digital program books][compendium] about the e-sports matches of their games, et cetera. Valve's Kyle Davis did a talk, [In-Game Economies in Team Fortress 2 and Dota 2][davistalk], which is a good overview about how they think about creating player value.
 
-The majority of these items are tradable between players. The value of an item is not just its cosmetic or utility valule, it also has secondary market resale value. Users created a vibrant trading market with [pricing guides][bptf]. And Valve has [its own official player to player marketplace][scm], which uses real currency.
+The majority of these items are tradable between players. The value of an item is not just its cosmetic or utility valule, it also has secondary market resale value. Users created a vibrant trading market with [pricing guides][bptf]. And Valve has [its own official player to player marketplace][scm], which uses national fiat currency.
 
 [topf2p]: http://www.gamasutra.com/blogs/RaminShokrizade/20130626/194933/The_Top_F2P_Monetization_Tricks.php
 [compendium]: http://www.dota2.com/international/compendium/0/1/0/
@@ -23,20 +23,21 @@ The majority of these items are tradable between players. The value of an item i
 
 Most people have at least heard of [Bitcoin][bitcoin], and think it a currency. A better model would be to think of it as a secure, shared database that has hard coded rules for dealing with a specific currency. Ethereum is one of the many "Bitcoin 2.0" projects being developed to expand the use of authenticated, distributed databases to other purposes.
 
-Instead of having hard coded rules for how to transact the bitcoin currency, Ethereum has a Turing complete scripting language describing how an individual transaction should change the ledger. A user, identified by a public/private keypair, can deploy a small program (called a contract) to the Ethereum blockchain. This program then has an address, and will manage its own state as programmed when users send digitally signed messages to it.
+Instead of having hard coded rules for how to transact the bitcoin currency, Ethereum has a Turing complete scripting language describing how an individual transaction should mutate the ledger. A user, identified by a public/private keypair, can deploy a small program (called a contract) to the Ethereum blockchain, and let other users send message calls to it. This program then has an address, and will manage its own state as programmed when users send digitally signed messages to it. These transactions are considered to have "run" when they are committed to a block.
 
-(For a more technical introduction to the system, please see the [Ethereum whitepaper][whitepaper]. Most of the code samples in this document are written in [Solidity][sol].)
+(For a more technical introduction to the system, please see the [Ethereum whitepaper][whitepaper], and their page on their [light client protocol][light]. Most of the code samples in this document are written in [Solidity][sol].)
 
 During this year's April Fools day, the Ethereum folks put out an announcement [that they were merging with Valve][fools]. While this was meant as a joke...parts of it are actually a really good idea.
 
 [bitcoin]: https://bitcoin.org/
 [whitepaper]: https://github.com/ethereum/wiki/wiki/White-Paper
+[light]: https://github.com/ethereum/wiki/wiki/Light-client-protocol
 [sol]: https://github.com/ethereum/wiki/wiki/Solidity-Tutorial
 [fool]: https://blog.ethereum.org/2015/04/01/ethereums-unexpected-future-direction/
 
 ### The Problem
 
-Items in Valve's ecconomy are tied to your Steam account. So we have items of real monetary vaule protected only by passwords on Windows machines. Breaking into someone's account and clearing out their virtual items for resale has become an epidemic, with dedicated malware attempting to gain control of Steam accounts. Steam support has a extremely poor reputation, so good luck if your account is hijacked.
+Items in Valve's ecconomy are tied to your Steam account. So we have items of real monetary vaule with a fairly liquid market place protected only by passwords on Windows machines. Breaking into someone's account and clearing out their virtual items for resale has become an epidemic, with dedicated malware attempting to gain control of Steam accounts. Steam support has a extremely poor reputation, so good luck if your account is hijacked.
 
 On top of that, Valve's infrastructure is sometimes unable to deal with the demands placed upon it. Every year, during the Steam Chirstmas and Summer sales, things go to hell. The Steam marketplace usually breaks under the transactional load. Trades between players tend to error out during these weeks. Strange weapons in TF2 (and I assume other games) intermittently stop recording their statistics.
 
@@ -112,9 +113,9 @@ If we were going to buid an idealized backpack, what properties should it have?
   * They should be able to trade it to another player.
   * They should be able to run Valve blessed modification code.
 
-We can build an Ethereum contract that does the above (part 1), and add hooks so Valve can continue to deploy new features. The main contract will perform the core storage of items, authentication, and known extension contracts for item modification and futher expansion of the system. The entire prototype is [here on github][prototype]; the rest of this article will instead be a high level overview of the software interface.
+We can build an Ethereum contract that does the above (part 1), and add hooks so Valve can continue to deploy new features. The main contract will perform the core storage of items, authentication, and dispatch to extension contracts for item modification and futher expansion of the system. The entire prototype is [here on github][prototype]; the rest of this article will instead be a high level overview of the software interface.
 
-<image style="float:right; width: 200px; margin: 10px;" src="trezor.jpg" />
+<image style="float:right; width: 175px; margin: 10px;" src="trezor.jpg" />
 
 Given that all interactions with this contract are done through digitally signed messages, people's backpack identity becomes a public/private keypair. This brings us to the one thing we won't prototype: dedicated hardware to protect the private key and perform signing of messages that get sent to the backpack system. Given the prevalence of remote access trojans as a way to bypass Valve's existing two-factor authentication, any system that relies on the security of a user's desktop is non-starter. I will instead hand-wave towards the Bitcoin communities hardware wallets which perform a similar function: [Trezor][trezor] (shown right), [Ledger Wallet][ledger], smart cards with secure elements, etc. Steam would prepare a transaction request and would send it to the signing hardware. The signing hardware would show the transaction to the user on an embedded screen. The user would have to physically press a button on the signing hardware to sign the proposed transaction.
 
@@ -231,14 +232,14 @@ Believe it or not, we now have everything needed to rebuild the entire economy!
 
 ### Users unlocking items for modification
 
-In the Valve item system, whenever an item is modified, it gets a new item id. This seems like 
+In the Valve item system, whenever an item is modified, it gets a new item id. This seems like an important identity property to preserve, so the only way to modify a finalized item should be to give it a new item id:
 
 ```cpp
 // As the owner of an item:
 bp.UnlockItemFor(my_item_id, a_valve_contract);
-// [An invocation of a_valve_contract].
+a_valve_contract.call([my_item_id]);  // Not the real syntax
 
-// Inside the implementation of |a_valve_contract|:
+// Inside the implementation of a_valve_contract:
 new_item = bp.OpenForModification(my_item_id);
 bp.SetIntAttribute(new_item, xxx, yyyyyy);
 bp.FinalizeItem(new_item)
