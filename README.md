@@ -1,11 +1,13 @@
 This is an experimental reimplementation of the Valve item system on top of the Ethereum blockchain.
 
-The system is described in the following series of blog posts.
+The system is described in the following series of blog posts under website/.
 
-* [The Blockchain Backpack](part1.md)
-* [Blockchain Item Modification](part2.md)
-* [Trading with the Blockchain Backpack](part3.md)
-* [Interlude: Current Events and Why these Things have Value](part4.md)
+* [The Blockchain Backpack](website/part1.md)
+* [Blockchain Item Modification](website/part2.md)
+* [Trading with the Blockchain Backpack](website/part3.md)
+* [Interlude: Current Events and Why these Things have Value](website/part4.md)
+
+The prototype itself lives under src/.
 
 ## Disclaimer
 
@@ -25,5 +27,6 @@ Assuming you're trying to build this locally (instead of just reading the code),
 
 To run the test suite, run:
 
+    cd src/
     make
 

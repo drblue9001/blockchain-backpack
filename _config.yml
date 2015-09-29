@@ -1,5 +1,0 @@
-exclude: [ "*.abi", "*.binary", "*.pyc", "*.json", "Makefile", "README.md", "notes.org" ]
-
-# Build settings
-markdown: redcarpet
-markdown_ext:  markdown,mkdown,mkdn,mkd,md
