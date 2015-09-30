@@ -1,0 +1,36 @@
+---
+layout: default
+---
+<div class="post">
+
+  <article class="post-content">
+    {{ content }}
+  </article>
+
+  <div class="nav-line">
+{% if page.prev-page %}
+    <div class="nav-left">
+      <a href="{{ page.prev-page.url }}">
+        <i class="fa fa-arrow-circle-left fa-2x"></i>
+        {{ page.prev-page.title }}
+      </a>
+    </div>
+{% endif %}
+
+    <div class="nav-center">
+  	  <a href="#">
+  	    <i class="fa fa-arrow-circle-up fa-2x"></i>
+  	  </a>
+    </div>
+
+{% if page.next-page %}
+    <div class="nav-right">
+      <a href="{{ page.next-page.url }}">
+        {{ page.next-page.title }}
+        <i class="fa fa-arrow-circle-right fa-2x"></i>
+      </a>
+    </div>
+  </div>
+{% endif %}
+  
+</div>

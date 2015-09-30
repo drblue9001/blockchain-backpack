@@ -1,5 +1,8 @@
 ---
-layout: default
+layout: page
+next-page:
+    title: "Item Modification"
+    url: part2.html
 ---
 
 Part 1: Introduction: The Blockchain Backpack

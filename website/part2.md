@@ -1,5 +1,11 @@
 ---
-layout: default
+layout: page
+prev-page:
+    title: "Introduction"
+    url: part1.html
+next-page:
+    title: "Trading"
+    url: part3.html
 ---
 
 Extension and Blockchain Item Modification

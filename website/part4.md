@@ -1,5 +1,8 @@
 ---
-layout: default
+layout: page
+prev-page:
+    title: "Trading"
+    url: part3.html
 ---
 
 Interlude: Current Events and The Tradeoffs Being Made

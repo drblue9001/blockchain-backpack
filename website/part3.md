@@ -1,5 +1,11 @@
 ---
-layout: default
+layout: page
+prev-page:
+    title: "Item Modification"
+    url: part2.html
+next-page:
+    title: "Tradeoffs"
+    url: part4.html
 ---
 
 Trading with the Blockchain backpack

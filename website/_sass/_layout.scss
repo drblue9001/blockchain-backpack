@@ -70,6 +70,31 @@
         }
 }
 
+/* Page Navigation
+ * ============================================== */
+    .nav-line {
+        position: relative;
+        width: 100%;
+
+        .nav-left {
+            position: absolute;
+            left: 0px;
+            bottom: 0px;
+        }
+
+        .nav-center {
+            position: aboslute;
+            bottom: 0px;
+            text-align: center;
+        }
+
+        .nav-right {
+            position: absolute;
+            right: 0px;
+            bottom: 0px;
+        }
+    }
+    
 /* Site Footer
  * ============================================== */
     .footer {
