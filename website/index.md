@@ -4,14 +4,14 @@ layout: default
 
 ### Abstract
 
-There have been many security and stability problems in the TF2 ecosystem over the last year. I propose moving the recording of ownership of items onto the Ethereum blockchain to enhance security of item transfers and to increase availability of item ownership data in a way that doesn't threaten the Valve item minting monopoly. I provide a proof of concept showing that this is possible.
+There have been many security and stability problems in the TF2 ecosystem over the last year. I propose moving the recording of ownership of high value items onto the Ethereum blockchain to prevent unauthorized transfer of items and to increase availability of item ownership data in a way that doesn't threaten the Valve item minting monopoly. I provide a proof of concept showing that this is possible.
 
 ### Table of Contents
 
 1. [Introduction: The Blockchain Backpack](part1.html)
 2. [Extension and Blockchain Item Modification](part2.html)
 3. [Trading with the Blockchain Backpack](part3.html)
-4. [Interlude: Current Events and Why these Things have Value](part4.html)
+4. [The Tradeoffs Being Made](part4.html)
 
 _(more to come)_
 
