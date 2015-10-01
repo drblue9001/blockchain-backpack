@@ -336,34 +336,6 @@ class ItemsTests(BackpackTest):
         self.assertEquals(self.contract.GetItemIntAttribute(new_id, 142), 8);
 
 
-locking_mock_src = '''
-contract LockingMock {
-  function OnItemUnlocked(address backpack, uint64 item_id) {
-    unlock_count++;
-  }
-
-  function OnItemLocked(address backpack, uint64 item_id) {
-    lock_count++;
-  }
-
-  uint64 public unlock_count;
-  uint64 public lock_count;
-}
-'''
-
-class ItemLockingTest(BackpackTest):
-    def setUp(self):
-        BackpackTest.setUp(self);
-        self.locking_mock = self.t.abi_contract(locking_mock_src, language='solidity');
-
-    def test_sanity(self):
-        self.assertEquals(0, self.locking_mock.lock_count())
-        self.assertEquals(0, self.locking_mock.unlock_count())
-
-    # TODO(drblue): Once I figure out how to get imports working, I should do
-    # further tests about what a contract that we've unlocked things for can
-    # do.
-
 class PaintCanTest(BackpackTest):
     def setUp(self):
         BackpackTest.setUp(self);
