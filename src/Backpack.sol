@@ -328,10 +328,8 @@ contract Backpack {
     // uncrating, where we have to use the pre-commitment trick.)
     uint16 level = schema.min_level;
     if (schema.min_level != schema.max_level) {
-      // TODO(drblue): It appears that in pyethereum tester, blockhash(0) is a
-      // constant. This doesn't appear to be the case on the main clients.
-      uint256 range = schema.max_level - schema.min_level;
-      level = uint16(uint256(block.blockhash(0)) % range);
+      uint256 range = schema.max_level - schema.min_level + 1;
+      level += uint16(uint256(block.blockhash(block.number - 1)) % range);
     }
 
     return CreateItemImpl(defindex, quality, origin, recipient,
