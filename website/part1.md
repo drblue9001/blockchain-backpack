@@ -116,7 +116,7 @@ If we were going to buid an idealized backpack, what properties should it have?
   * They should be able to trade it to another player.
   * They should be able to run Valve blessed modification code.
 
-We can build an Ethereum contract that does the above (part 1), and add hooks so Valve can continue to deploy new features. The main contract will perform the core storage of items, authentication, and dispatch to extension contracts for item modification and futher expansion of the system. The entire prototype is [here on github][prototype]; the rest of this article will instead be a high level overview of the software interface.
+We can build an Ethereum contract that does the above, and add hooks so Valve can continue to deploy new features. The code to this contract is really boring; it's a couple of associative arrays. This is good. Boring code is code that is easy to reason about and more likely to be correct. However, this does not make for a good blog post so I will instead spend the rest of this first post outlining the interface of the main contract. The main contract will perform the core storage of items, authentication, and dispatch to extension contracts for item modification and futher expansion of the system. Instructions on checking out the entire source tree are [on the front page](index.html).
 
 <image style="float:right; width: 175px; margin: 10px;" src="trezor.jpg" />
 
@@ -124,8 +124,6 @@ Given that all interactions with this contract are done through digitally signed
 
 [trezor]: https://www.bitcointrezor.com/
 [ledger]: https://www.ledgerwallet.com/
-
-[prototype]: FILL_ME_IN_LATER
 
 ### Representing permissions
 

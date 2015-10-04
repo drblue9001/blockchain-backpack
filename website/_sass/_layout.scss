@@ -9,9 +9,17 @@
 
     .site-header a {color: $brand-color};
 
+    .site-title {
+        padding-top: 16px;
+        position: absolute;
+        left: 0px;
+        margin-left: 25px;
+    }
+
     .site-nav {
         padding-top: 16px;
-        float: right;
+        position: absolute;
+        right: 0px;
         margin-right: 25px;
         text-transform: uppercase;
 
@@ -52,23 +60,22 @@
                 padding: 5px 10px;
             }
         }
+    }
 
-        .page-link {
-            font-family: 'Open Sans';
-            font-weight: 700 !important;
-            line-height: $base-line-height;
-            letter-spacing: 0.05em;
+    .page-link {
+        font-family: 'Open Sans';
+        font-weight: 700 !important;
+        line-height: $base-line-height;
+        letter-spacing: 0.05em;
 
-
-            &:not(:first-child) {
-                    margin-left: 20px;
-            }
-
-            &:hover {
-                opacity: 0.8
-            };
+        &:not(:first-child) {
+            margin-left: 20px;
         }
-}
+
+        &:hover {
+            opacity: 0.8
+        };
+    }
 
 /* Page Navigation
  * ============================================== */
