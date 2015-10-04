@@ -672,6 +672,33 @@ contract Backpack {
     return DoActionImpl(msg.sender, item_ids, action);
   }
 
+  function AddToModifiable(uint64 item_id,
+                           uint32 attribute_defindex,
+                           uint32 amount) {
+    if (!HasPermission(msg.sender, Permissions.ModifiableAttribute))
+      return;
+
+    uint256 internal_id = all_items[item_id];
+    if (internal_id == 0)
+      return;
+
+    // Iterate through all the attributes on the item and add the amount if
+    // the referenced attribute exists and is modifiable.
+    ItemInstance item = item_storage[internal_id];
+    uint i = 0;
+    for (i = 0; i < item.int_attributes.length; ++i) {
+      IntegerAttribute attr = item.int_attributes[i];
+      if (attr.defindex == attribute_defindex &&
+          attr.modifiable) {
+        attr.value = attr.value + amount;
+        return;
+      }
+    }
+
+    // AddToModifiable can only be used to modify existing attributes. Invalid
+    // input.
+  }
+
   // --------------------------------------------------------------------------
 
   function GetNextItemID() private returns(uint64 new_item_id) {

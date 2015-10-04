@@ -335,6 +335,50 @@ class ItemsTests(BackpackTest):
         self.assertEquals(self.contract.GetItemLength(new_id), 1);
         self.assertEquals(self.contract.GetItemIntAttribute(new_id, 142), 8);
 
+class ModifiableAttributeTest(BackpackTest):
+    def test_can_add_to_modifiable_attribute(self):
+        self.assertEquals(self.contract.SetAttributeModifiable(214, True), kOK);
+
+        self.assertEquals(self.contract.SetItemSchema(94, 1, 100, 0), kOK);
+        texas_id = self.contract.CreateNewItem(94, 0, 1, tester.a1);
+        self.contract.SetIntAttribute(texas_id, 214, 0);
+        self.contract.FinalizeItem(texas_id);
+
+        self.assertEquals(self.contract.GetItemIntAttribute(texas_id, 214), 0);
+
+        # Player scored ten points.
+        self.contract.AddToModifiable(texas_id, 214, 10);
+
+        self.assertEquals(self.contract.GetItemIntAttribute(texas_id, 214), 10);
+
+    def test_cant_add_modifiable_attribute_to_item(self):
+        self.assertEquals(self.contract.SetAttributeModifiable(214, True), kOK);
+
+        self.assertEquals(self.contract.SetItemSchema(94, 1, 100, 0), kOK);
+        texas_id = self.contract.CreateNewItem(94, 0, 1, tester.a1);
+        self.contract.FinalizeItem(texas_id);
+
+        self.assertEquals(self.contract.GetItemIntAttribute(texas_id, 214), 0);
+
+        # Player scored ten points, but this item isn't Strange.
+        self.contract.AddToModifiable(texas_id, 214, 10);
+
+        self.assertEquals(self.contract.GetItemIntAttribute(texas_id, 214), 0);
+
+
+    def test_cant_set_normal_attribute(self):
+        self.assertEquals(self.contract.SetAttribute(142, "name",
+                                                     "set item tint RGB"),
+                          kOK);
+
+
+        self.assertEquals(self.contract.SetItemSchema(94, 1, 100, 0), kOK);
+        texas_id = self.contract.CreateNewItem(94, 0, 1, tester.a1);
+        self.contract.SetIntAttribute(texas_id, 142, 81);
+        self.contract.FinalizeItem(texas_id);
+
+        self.contract.AddToModifiable(texas_id, 142, 90);
+        self.assertEquals(self.contract.GetItemIntAttribute(texas_id, 142), 81);
 
 class PaintCanTest(BackpackTest):
     def setUp(self):
