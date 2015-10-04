@@ -380,6 +380,23 @@ class ModifiableAttributeTest(BackpackTest):
         self.contract.AddToModifiable(texas_id, 142, 90);
         self.assertEquals(self.contract.GetItemIntAttribute(texas_id, 142), 81);
 
+    def test_giving_clears_modifiable_attribute(self):
+        self.assertEquals(self.contract.CreateUser(tester.a1), kOK);
+        self.assertEquals(self.contract.CreateUser(tester.a2), kOK);
+
+        self.assertEquals(self.contract.SetAttributeModifiable(214, True), kOK);
+
+        self.assertEquals(self.contract.SetItemSchema(94, 1, 100, 0), kOK);
+        texas_id = self.contract.CreateNewItem(94, 0, 1, tester.a1);
+        self.contract.SetIntAttribute(texas_id, 214, 0);
+        self.contract.FinalizeItem(texas_id);
+        self.contract.AddToModifiable(texas_id, 214, 10);
+        self.assertEquals(self.contract.GetItemIntAttribute(texas_id, 214), 10);
+
+        new_id = self.contract.GiveItemTo(texas_id, tester.a2, sender=tester.k1)
+        self.assertEquals(self.contract.GetItemIntAttribute(new_id, 214), 0);
+
+
 class PaintCanTest(BackpackTest):
     def setUp(self):
         BackpackTest.setUp(self);

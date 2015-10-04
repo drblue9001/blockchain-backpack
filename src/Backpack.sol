@@ -422,6 +422,14 @@ contract Backpack {
       RemoveItemIdFromBackpackImpl(item_id, item.owner);
       delete all_items[item_id];
 
+      // Clean up modifiable attributes.
+      uint i = 0;
+      for (i = 0; i < item.int_attributes.length; ++i) {
+        IntegerAttribute attr = item.int_attributes[i];
+        if (attr.modifiable)
+          attr.value = 0;
+      }
+
       uint64 new_item_id = GetNextItemID();
       item.id = new_item_id;
       item.owner = recipient;
