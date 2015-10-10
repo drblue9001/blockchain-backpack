@@ -680,6 +680,10 @@ contract Backpack {
     return DoActionImpl(msg.sender, item_ids, action);
   }
 
+  // Adds |amount| to the current value of |attribute_defindex| on |item_id|.
+  // |attribute_defindex| must have been set as a modifiable attribute at the
+  // time the attribute was originally set on this object. The caller must have
+  // Permissions.ModifiableAttribute, or this method does nothing.
   function AddToModifiable(uint64 item_id,
                            uint32 attribute_defindex,
                            uint32 amount) {

@@ -12,6 +12,7 @@ There have been many security and stability problems in the TF2 ecosystem over t
 2. [Extension and Blockchain Item Modification](part2.html)
 3. [Trading with the Blockchain Backpack](part3.html)
 4. [The Tradeoffs Being Made](part4.html)
+5. [Statistics and Stranges on the Blockchain](part5.html)
 
 _(more to come)_
 
