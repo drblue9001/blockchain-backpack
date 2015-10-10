@@ -3,6 +3,9 @@ layout: page
 prev-page:
     title: "Trading"
     url: part3.html
+next-page:
+    title: "Statistics"
+    url: part5.html
 ---
 
 The Tradeoffs Being Made
@@ -21,6 +24,8 @@ These attacks happen because having access to a user's computer is all you need 
 Contrast this with the system I'm proposing, using dedicated [Trezor][trezor]-like hardware for signing digital messages. 
 The attacker causes the steam client to generate the command to perform the trade, which is then displayed on the screen of the signing hardware. To actually digitally sign the command to perform the trade, the user has to actually press a button on the signing hardware, where the trade would also be displayed on the signing hardware's screen. This makes large classes of current attacks impossible, which lowers Valve's support costs and stops the inflation caused by Steam Support duped items.
 
+And increased security makes people feel better about spending money in the ecosystem. My backpack is worth thousands of dollars and I know that I'm one bug in a program I use away from possibly losing it all. Giving people confidence in and of itself would make Valve more money.
+
 As an added bonus, because block chains are distributed databases, item ownership information becomes much more resilient. There's a [light client protocol][light] which allows applications to just watch the state of a specific contract, while still having some cryptographic assurance about the current state of the world. Users would be able to prove that they own items in game even when the centralized item servers go down.
 
 From a security standpoint, _something_ like the system I'm outlining is needed to stop the rampant hacking, but this system has costs to everyone, and it is important to consider the tradeoffs being made here.
@@ -29,7 +34,7 @@ From a security standpoint, _something_ like the system I'm outlining is needed 
 
 From the user standpoint, there's a loss of convenience. While the trade conformation emails Valve currently sends aren't exactly convenient, it does mean you can trade from anywhere you have a browser. With the system I'm proposing, you'd have to have a dedicated hardware dongle to sign transactions.
 
-Likewise, the user is now on the hook for paying transaction fees to the Ethereum network. I personally am fine with paying a couple of cents per transaction, especially to protect my hundreds of dollars of Unusuals, but this does mean that it will never make economic sense for the majority of free item drops, which are worth a penny, if that.
+Likewise, the user is now on the hook for paying transaction fees to the Ethereum network. I personally am fine with paying a couple of cents per transaction, especially to protect my thousands of dollars of Unusuals, but this does mean that it will never make economic sense for the majority of free item drops, which are worth a penny, if that.
 
 Likewise, there's the cost of hardware. I assume that Valve could manufacture hardware much cheaper than any of the current Bitcoin hardware wallets. This would still be a cost for the users. It's one that I'd pay, and that I think many people would be willing to pay for, but it is still an up front cost.
 
@@ -39,7 +44,7 @@ Finally, the user is on the hook for security of their encryption key. A user co
 
 ### Downsides for Valve
 
-From Valve's point of view, there are also downsides. Given that it doesn't make economic sense for items worth under a penny to go on chain, the current centralized item system probably has to stay. Interoperability becomes a consideration and would make any actual production ready system become more complex.
+From Valve's point of view, there are also downsides. Given that it doesn't make economic sense for items worth under a penny to go on chain, the current centralized item system probably has to stay. Interoperability becomes a consideration and would make any actual production ready system more complex.
 
 Valve currently doesn't gain any revenue from the high end unusual market as their Steam Marketplace will only accept sell orders up to $400. (For reference, a Golden Frying Pan usually goes for over $2000. A Showstopper Conga goes for $800. And don't even _look_ at what Burning Team Captains go for!) Trading these large items on chain would be safer, without the chargeback risk that comes with PayPal.
 
