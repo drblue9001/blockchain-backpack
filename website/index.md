@@ -21,3 +21,11 @@ _(more to come)_
 While all the code is Apache 2.0 licensed, this isn't a real project; it is proof of concept to show that such a system is possible, and a sequence of blog posts showing why it is desirable.
 
 If you actually want to build a full version of the system I'm outlining, I suggest that you actually throw away everything I've written (except maybe the interface outlined here), and start over.
+
+### Getting the prototype
+
+You can fetch the code to the prototype and the website by running:
+
+    git clone http://git.blockchainbackpack.org/backpack.git/
+
+This repository has a `website/` folder with this website and a `src/` folder which holds all the contract files. Instructions on building the prototype are in the toplevel README.md file.

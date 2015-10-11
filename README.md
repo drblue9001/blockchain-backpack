@@ -30,3 +30,6 @@ To run the test suite, run:
     cd src/
     make
 
+The file for the backpack contracts is `src/Backpack.sol`. You can find the test suite in `src/backpack_tests.py`.
+
+There's a small python script which takes the TF2 JSON schema file, and a JSON representation of a players backpack and imports the backpack's contents onto a local test chain. You can find that in `src/load_backpack.py`.
