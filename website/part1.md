@@ -198,7 +198,9 @@ bp.FinalizeItem(id);
 
 The creator of an item builds the item, and then adds all the attributes to that item. They then finalize the item, and no longer have access to modifying it. It is now `recipient_address`'s item to do with as they please.
 
-(Why do it this way? Because we want to minimize the number of parameters to a single function. This may have been due to me starting this project when the compiler was in pre-alpha, but I had some issues with overflowing the local variable stack when I passed too many parameters. This influenced the design of this prototype, and may not be necessary anymore.)
+Why do it this way? We want a general interface for flexible usage within contracts, and we'll show an example in part 2 which conditionally puts some attributes on an item. An actual production ready version of this system would also include a QuickImportItem() so that an item would be built with a single transaction.
+
+(An earlier version had a helper QuickImportItem() method which took two arrays of attribute defindexes and attribute values. I developed this prototype with a pre-alpha compiler, and said compiler broke for a while passing arrays to contracts. This has since been fixed, but it wasn't necessary for the prototype so I left it out.)
 
 ### User commands
 
