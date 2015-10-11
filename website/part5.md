@@ -1,4 +1,5 @@
 ---
+title: "Statistics and Stranges on the Blockchain"
 layout: page
 prev-page:
     title: "Tradeoffs"

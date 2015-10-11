@@ -1,4 +1,5 @@
 ---
+title: "Extension and Blockchain Item Modification"
 layout: page
 prev-page:
     title: "Introduction"

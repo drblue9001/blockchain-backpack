@@ -1,4 +1,5 @@
 ---
+title: "The Tradeoffs Being Made"
 layout: page
 prev-page:
     title: "Trading"

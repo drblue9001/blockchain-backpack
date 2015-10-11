@@ -1,4 +1,5 @@
 ---
+title: "Trading with the Blockchain backpack"
 layout: page
 prev-page:
     title: "Item Modification"

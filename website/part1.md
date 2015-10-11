@@ -1,4 +1,5 @@
 ---
+title: "Introduction: The Blockchain Backpack"
 layout: page
 next-page:
     title: "Item Modification"
