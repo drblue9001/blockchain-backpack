@@ -18,8 +18,7 @@ As the economy in virtual items has grown in size and represents more real world
 3. [Trading with the Blockchain Backpack](part3.html)
 4. [The Trade-offs Being Made](part4.html)
 5. [Statistics and Stranges on the Blockchain](part5.html)
-
-_(more to come)_
+6. [Crates and the Quality of Randomness](part6.html)
 
 ### Getting the code
 

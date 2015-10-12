@@ -170,6 +170,14 @@ class ItemsTests(BackpackTest):
         self.assertEquals(self.contract.GetNumberOfItemsOwnedFor(tester.a1),
                           0);
 
+    # def test_item_level(self):
+    #     self.assertEquals(self.contract.SetItemSchema(20, 10, 20, 0), kOK);
+    #     for i in range(0, 20):
+    #         self.t.mine()
+    #         id = self.contract.CreateNewItem(20, 0, 1, tester.a1);
+    #         self.contract.FinalizeItem(id);
+    #         print self.contract.GetItemData(id);
+
     def test_valid_item_creation(self):
         # Build a valid schema item and then instantiate it.
         self.assertEquals(self.contract.SetItemSchema(20, 50, 50, 0), kOK);
@@ -524,6 +532,71 @@ class TradeCoordinatorTest(BackpackTest):
         # Now a1 has a Righteous Bison and a2 has a Texas Ten Gallon hat.
         self.assertEquals(self.GetArrayOfDefindexOfBackpack(tester.a1), [442]);
         self.assertEquals(self.GetArrayOfDefindexOfBackpack(tester.a2), [94]);
+
+
+class CrateTest(BackpackTest):
+    def setUp(self):
+        BackpackTest.setUp(self);
+        self.crate = fs.Crate.create(self.contract.address,
+                                     sender=tester.k0, state=self.t)
+        self.contract.SetPermission(self.crate.address, 3, True);
+        self.contract.SetPermission(self.crate.address, 4, True);
+        self.assertEquals(self.contract.CreateUser(tester.a1), kOK);
+
+        for defindex in [175, 142, 128, 130, 247, 248, 5020, 5039, 5040]:
+            self.assertEquals(self.contract.SetItemSchema(defindex, 1, 1, 0), kOK);
+
+        # Crate
+        self.assertEquals(self.contract.SetItemSchema(5022, 10, 10,
+                                                      self.crate.address), kOK);
+        self.crate_id = self.contract.CreateNewItem(5022, 0, 1, tester.a1);
+        self.contract.FinalizeItem(self.crate_id);
+
+        # Key
+        self.assertEquals(self.contract.SetItemSchema(5021, 5, 5, 0), kOK);
+        self.key_id = self.contract.CreateNewItem(5021, 0, 1, tester.a1);
+        self.contract.FinalizeItem(self.key_id);
+
+
+    def testCrateWorking(self):
+        # Precommit to receiving an item.
+        self.assertEquals(self.contract.UseItem(
+            [self.crate_id, self.key_id], sender=tester.k1),
+                          kOK)
+
+        # The previous items should have been removed immediately.
+        self.assertEquals(self.contract.GetNumberOfItemsOwnedFor(tester.a1), 0);
+
+        # Ensure that we can't uncrate right away.
+        self.assertEquals(self.crate.PerformUncrate(0), 'Wrong block height\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00');
+
+        # Mine a blocks.
+        self.t.mine()
+        self.t.mine()
+        self.t.mine()
+
+        self.assertEquals(self.crate.PerformUncrate(0), kOK);
+        self.assertEquals(self.contract.GetNumberOfItemsOwnedFor(tester.a1), 1);
+
+    def testCrateNotEnoughBlocks(self):
+        # Precommit to receiving an item.
+        self.assertEquals(self.contract.UseItem(
+            [self.crate_id, self.key_id], sender=tester.k1),
+                          kOK)
+
+        # The previous items should have been removed immediately.
+        self.assertEquals(self.contract.GetNumberOfItemsOwnedFor(tester.a1), 0);
+
+        # Ensure that we can't uncrate right away.
+        self.assertEquals(self.crate.PerformUncrate(0), 'Wrong block height\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00');
+
+        # Mine a blocks.
+        self.t.mine()
+        self.t.mine()
+
+        # We still need to see one more block.
+        self.assertEquals(self.crate.PerformUncrate(0), 'Wrong block height\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00');
+
 
 
 

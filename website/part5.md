@@ -4,6 +4,9 @@ layout: page
 prev-page:
     title: "Trade-offs"
     url: part4.html
+next-page:
+    title: "Crates"
+    url: part6.html
 ---
 
 Statistics and Stranges on the Blockchain

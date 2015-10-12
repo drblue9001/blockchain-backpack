@@ -545,7 +545,7 @@ contract Backpack {
 
     ItemInstance item = item_storage[internal_id];
     if (item.state == ItemState.ITEM_EXISTS && item.owner == msg.sender)
-      EnsureUnlockedImpl(internal_id, item_id, c);
+      EnsureUnlockedImpl(internal_id, item_id, user);
   }
 
   // Revokes access to |item_id| by the address that current can act as
@@ -1095,4 +1095,96 @@ contract TradeCoordinator {
 
   Backpack backpack;
   Trade[] trades;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Crate                                                                      */
+/* -------------------------------------------------------------------------- */
+
+// Contract execution in Ethereum is purely deterministic; a person must be
+// able to examine the blockchain and see that there's one canonical valid
+// state. So any random number generation that we do must be psuedorandom and
+// deterministic, while still being resistant to manipulation by the user.
+//
+// When we "uncrate", we are making a precommitment to open a crate in the
+// future.
+contract Crate is MutatingExtensionContract {
+  struct RollID {
+    uint offset;
+    uint blockheight;
+    address user;
+  }
+
+  // Calling the crating contract through the UseItem interface will destroy
+  // the key and the crate, and put a precommitment to roll two blocks into the
+  // future.
+  function MutatingExtensionFunction(uint64[] item_ids)
+      external returns (bytes32 message) {
+    if (msg.sender != address(backpack))
+      return "Invalid caller";
+
+    // Verify that we were given a crate and key.
+    if (item_ids.length != 2)
+      return "Wrong number of arguments";
+    if ((backpack.GetItemDefindex(item_ids[0]) != 5022) ||
+        (backpack.GetItemDefindex(item_ids[1]) != 5021))
+      return "Incorrect items passed";
+
+    uint blockheight = block.number + 2;
+    uint[] precommitments = precommitments_per_block_number[blockheight];
+
+    uint roll_id = open_rolls.length++;
+    RollID r = open_rolls[roll_id];
+    r.offset = precommitments.length;
+    r.blockheight = blockheight;
+    r.user = backpack.GetItemOwner(item_ids[0]);
+
+    // Add to the list of precommitments.
+    uint i = precommitments.length++;
+    precommitments[i] = roll_id;
+
+    backpack.DeleteItem(item_ids[0]);
+    backpack.DeleteItem(item_ids[1]);
+
+    return "OK";
+  }
+
+  function PerformUncrate(uint roll_id) external returns (bytes32 message) {
+    RollID r = open_rolls[roll_id];
+    if ((r.blockheight == 0) ||
+        (block.number < r.blockheight + 1) ||
+        (block.number > r.blockheight + 255 - 2)) {
+      return "Wrong block height";
+    }
+
+    uint roll = GetRandom(r.blockheight, r.offset) % 9;
+    uint64 new_id = backpack.CreateNewItem(item_ids[roll], 6, 8, r.user);
+    backpack.FinalizeItem(new_id);
+    // TODO(drblue): delete r and remove from prpecommitments per block number.
+    return "OK";
+  }
+
+  function GetRandom(uint blockheight, uint offset)
+      internal returns (uint random) {
+    return uint(sha256(block.blockhash(blockheight - 1), block.blockhash(blockheight), offset));
+  }
+
+  function Crate(Backpack system) {
+    backpack = system;
+
+    item_ids[0] = 175;      // Vita-Saw
+    item_ids[1] = 142;      // Gunslinger
+    item_ids[2] = 128;      // Equalizer
+    item_ids[3] = 130;      // Scottish Resistance
+    item_ids[4] = 247;      // Old Guadalajara
+    item_ids[5] = 248;      // Napper's Respite
+    item_ids[6] = 5020;     // Name Tag
+    item_ids[7] = 5039;     // An Extraordinary Abundance of Tinge
+    item_ids[8] = 5040;     // A Distinctive Lack of Hue
+  }
+
+  Backpack backpack;
+  uint32[9] item_ids;
+  RollID[] open_rolls;
+  mapping (uint => uint[]) precommitments_per_block_number;
 }
