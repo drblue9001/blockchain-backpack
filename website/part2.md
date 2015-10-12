@@ -16,8 +16,6 @@ In the previous part, we described why we should move parts of Valve's item syst
 
 ### More things to do!
 
-First some history.
-
 These games have been built piecewise over multiple years. In the case of Team Fortress 2, first the game launched. Then [the ability to have different weapons][goldrush] was added. Later, the [ability to paint items][mannconomy] was added. As time went on, they added new ways to modify items, and I expect that we'll see many more new ways to modify items in the future. We don't just need to support the current feature list, but need to build up a way to continue to extend the system. So let's make some general interfaces.
 
 [goldrush]: https://wiki.teamfortress.com/wiki/Gold_Rush_Update
@@ -25,7 +23,7 @@ These games have been built piecewise over multiple years. In the case of Team F
 
 ### Painting as an example
 
-There are two sorts of actions taken on items: an item is consumed or otherwise used to modify/create an item, or a contextual named action is invoked on an item. Painting items is a good example of both: the [paint can][pc] is an example of an item consumed to color an item, and the Restore command is an example of command that removes the effects of the paint can.
+There are two sorts of actions taken on items: an item is consumed or otherwise used to modify/create an item, or a contextual named action is invoked on an item. Painting items is a good example of both: the [paint can][pc] is an example of an item consumed to change the color of an item, and the Restore command is an example of a command that removes the effects of the paint can.
 
 [pc]: https://wiki.teamfortress.com/wiki/Paint_Can
 
@@ -87,8 +85,8 @@ backpack.UseItem([paint_can_id, item_to_paint_id]);
 We can have these sort of shorthand semantics by associating a piece of extension code with an item. Up until this point, I haven't mentioned how much of the TF2 item schema would have to be written onto the blockchain, versus served traditionally.
 
 ```cpp
-contract Backpack {    // Continued from last
-  // Sets the min_level, max_level and acction_recipe.
+contract Backpack {                     // Continued.
+  // Sets the |min_level|, |max_level| and |use_contract|.
   function SetItemSchema(uint32 defindex, uint8 min_level, uint8 max_level,
                          address use_contract);
 
@@ -127,7 +125,7 @@ bp.AddIntAtributeToItemSchema(5046, 261, 5801378);
 // et cetera.
 ```
 
-Now that we have the schema of paint cans set so we can instantiate them and use them, let's describe exactly what `UseItem()` does. It looks at the schema of the first item in the list of incoming ids. If that exists and has a contract, it unlocks all the incoming items for that contract so that contract can modify those items. Then it calls the contract with the item_ids. Then it locks any still existing items after the call.
+Now that we have the schema of paint cans set so we can instantiate them and use them, let's describe what `UseItem()` does. It looks at the schema of the first item in the list of incoming ids. If all those items exists, and the first item's type has a `use_contract` set by `SetItemSchema()`, it unlocks all the incoming items for that contract so that contract can modify those items. Then it calls the `use_contract` with the item_ids. Then it locks any still existing items after the call.
 
 This lets a user modify their items using code blessed by Valve, only when they wish. As each transaction needs a separate button press on the theoretical signing hardware, we want this user request to be a single signed transaction.
 
@@ -179,6 +177,6 @@ bp.SetPermission(restore_paint_job_contract, Permissions.AddAttributesToItem);
 bp.SetAction("RestorePaintJob", restore_paint_job_contract);
 ```
 
-(And we can call SetItemSchema() / SetAction() on the same item index / action string as many times as necessary to update what code should be run. Which is pretty good since both contracts as written have subtle bugs! Can you spot them? Hint: the restore contract's bug is similar to a bug Valve made regarding killstreak kits recently.)
+And we can call `SetItemSchema()` / `SetAction()` on the same item schema / action string as many times as necessary to update what code should be run in case we accidentally deploy a contract with a bug in it.
 
-So we now have a way of modifying an item only when the user requests it, and only with code blessed by Valve. These primitives should be able to implement strangifiers, killstreak kits, chemistry sets, custom name and description tags, Halloween spells, and anything else that modifies items in the game.
+So we now have a way of modifying an item only when the user requests it, and only with code blessed by Valve. These primitives should be able to implement strangifiers, killstreak kits, chemistry sets, custom name and description tags, Halloween spells, and anything else that modifies items in the game. We have made the system extensible.

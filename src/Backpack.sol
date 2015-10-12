@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// An extension contract which takes a list of item ids and 
+// An extension contract which takes a list of item ids and returns a message.
 contract MutatingExtensionContract {
   function MutatingExtensionFunction(uint64[] item_id)
       external returns (bytes32 message);
@@ -308,10 +308,11 @@ contract Backpack {
     StringAttribute[] str_attributes;
   }
 
-  // This is the main method which is used to make new items. As long as the
-  // caller has permission, it always succeeds regardless if the user's
-  // backpack is over capacity or not. This function returns the item id of the
-  // created item or 0 is there was an error.
+  // Used to create new items. If the caller has permission to make new items,
+  // create one with the following properties and put it in the under
+  // construction state. Returns the item id or 0 if error.
+  //
+  // (Requires Permissions.GrantItems.)
   function CreateNewItem(uint32 defindex, uint16 quality,
                          uint16 origin, address recipient) returns (uint64) {
     if (!HasPermission(msg.sender, Permissions.GrantItems))
@@ -338,10 +339,11 @@ contract Backpack {
                           0 /* original_id */);
   }
 
-  // The lower level item creation function and is optimized for creation of
-  // items which already exist off chain, though it can be used for any fine
-  // tune building of an item. If |attribute_key| is non zero, we optimize a
-  // call to 
+  // Used to import an existing, off-chain item, which already has a |level|
+  // and an |original_id|. Item is returned in the under construction
+  // state. Returns the new item id or 0 if error.
+  //
+  // (Requires Permissions.GrantItems.)
   function ImportItem(uint32 defindex,
                       uint16 quality,
                       uint16 origin,
@@ -362,9 +364,11 @@ contract Backpack {
                           msg.sender, level, original_id);
   }
 
-  // When |item_id| exists, and the item is unlocked for the caller and the
-  // caller has Permissions.AddAttributesToItem, create a new item number for
-  // this item and return it. Otherwise returns 0.
+  // When |item_id| exists, and the item is unlocked for the caller, create a
+  // new item number for this item, put it in the under construction state, and
+  // return it. Otherwise returns 0.
+  //
+  // (Requires Permissions.AddAttributesToItem.)
   function OpenForModification(uint64 item_id) returns (uint64) {
     if (!HasPermission(msg.sender, Permissions.AddAttributesToItem))
       return 0;
@@ -403,6 +407,10 @@ contract Backpack {
     return 0;
   }
 
+  // Give the item to recipient. This will generate a new |item_id|. Returns
+  // the new |item_id|.
+  //
+  // (May only be called by the item's owner or unlocked_for.)
   function GiveItemTo(uint64 item_id, address recipient) returns (uint64) {
     // Ensure the recipient has space.
     User u = user_data[recipient];
@@ -441,6 +449,9 @@ contract Backpack {
     return 0;
   }
 
+  // Adds an integer attribute to an item in the under construction state.
+  //
+  // (Requires Permissions.AddAttributesToItem.)
   function SetIntAttribute(uint64 item_id,
                            uint32 attribute_defindex,
                            uint64 value) {
@@ -509,8 +520,8 @@ contract Backpack {
     }
   }
 
-  /// @notice If `item_id` is currently under construction, this switches the
-  /// item to exists.
+  // Marks an item in the under construction state as finalized. No further
+  // modifications can be made to this item.
   function FinalizeItem(uint64 item_id) {
     uint256 internal_id = all_items[item_id];
     if (internal_id == 0)
@@ -524,8 +535,10 @@ contract Backpack {
     }
   }
 
-  /// @notice Unlocks `item_id` for the address `c`.
-  function UnlockItemFor(uint64 item_id, address c) {
+  // Allows |user| to temporarily act as the |item_id|'s owner.
+  //
+  // (May only be called by |item_id|'s owner.)
+  function UnlockItemFor(uint64 item_id, address user) {
     uint256 internal_id = all_items[item_id];
     if (internal_id == 0)
       return;
@@ -535,7 +548,11 @@ contract Backpack {
       EnsureUnlockedImpl(internal_id, item_id, c);
   }
 
-  /// @notice If `item_id` is unlocked, this relocks it.
+  // Revokes access to |item_id| by the address that current can act as
+  // |item_id|'s owner.
+  //
+  // (May be called by |item_id|'s owner, or the current address temporarily
+  // acting as the item's owner.)
   function LockItem(uint64 item_id) {
     uint256 internal_id = all_items[item_id];
     if (internal_id == 0)
@@ -546,6 +563,9 @@ contract Backpack {
       EnsureLockedImpl(internal_id, item_id);
   }
 
+  // Deletes the item.
+  //
+  // (May only be called by the item's owner or unlocked_for.)
   function DeleteItem(uint64 item_id) {
     uint256 internal_id = all_items[item_id];
     if (internal_id == 0)
@@ -991,9 +1011,8 @@ contract TradeCoordinator {
         return 0;
     }
 
-    // Verify that all |their_items| belong to |user_two| single person.
+    // Verify that all |their_items| belong to |user_two|.
     for (i = 0; i < their_items.length; ++i) {
-      // Verify this item belongs to |user_two|.
       if (backpack.GetItemOwner(their_items[i]) != user_two)
         return 0;
     }
@@ -1017,20 +1036,20 @@ contract TradeCoordinator {
     uint i;
     for (i = 0; i < t.user_one_items.length; ++i) {
       if (backpack.CanGiveItem(t.user_one_items[i]) != true) {
-        RejectTradeImpl(trade_id);
+        DeleteTradeImpl(trade_id);
         return;
       }
     }
     for (i = 0; i < t.user_two_items.length; ++i) {
       if (backpack.CanGiveItem(t.user_two_items[i]) != true) {
-        RejectTradeImpl(trade_id);
+        DeleteTradeImpl(trade_id);
         return;
       }
     }
 
     if (!backpack.AllowsItemsReceived(t.user_one) ||
         !backpack.AllowsItemsReceived(t.user_two)) {
-      RejectTradeImpl(trade_id);
+      DeleteTradeImpl(trade_id);
       return;
     }
 
@@ -1050,6 +1069,8 @@ contract TradeCoordinator {
       if (i < t.user_two_items.length)
         backpack.GiveItemTo(t.user_two_items[i], t.user_one);
     }
+
+    DeleteTradeImpl(trade_id);
   }
 
   function RejectTrade(uint256 trade_id) {
@@ -1057,7 +1078,7 @@ contract TradeCoordinator {
     if (msg.sender != t.user_two)
       return;
 
-    RejectTradeImpl(trade_id);
+    DeleteTradeImpl(trade_id);
   }
 
   function TradeCoordinator(Backpack system) {
@@ -1065,7 +1086,7 @@ contract TradeCoordinator {
     trades.length = 1;
   }
 
-  function RejectTradeImpl(uint256 trade_id) private {
+  function DeleteTradeImpl(uint256 trade_id) private {
     Trade t = trades[trade_id];
     delete t.user_one_items;
     delete t.user_two_items;

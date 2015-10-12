@@ -52,9 +52,8 @@ contract TradeCoordinator {
         return 0;
     }
 
-    // Verify that all |their_items| belong to |user_two| single person.
+    // Verify that all |their_items| belong to |user_two|.
     for (i = 0; i < their_items.length; ++i) {
-      // Verify this item belongs to |user_two|.
       if (backpack.GetItemOwner(their_items[i]) != user_two)
         return 0;
     }
@@ -74,33 +73,10 @@ contract TradeCoordinator {
     if (msg.sender != t.user_two)
       return;
 
-    // We need to recheck the validity of the trade before we accept it.
-    uint i;
-    for (i = 0; i < t.user_one_items.length; ++i) {
-      if (backpack.CanGiveItem(t.user_one_items[i]) != true) {
-        RejectTradeImpl(trade_id);
-        return;
-      }
-    }
-    for (i = 0; i < t.user_two_items.length; ++i) {
-      if (backpack.CanGiveItem(t.user_two_items[i]) != true) {
-        RejectTradeImpl(trade_id);
-        return;
-      }
-    }
-
-    if (!backpack.AllowsItemsReceived(t.user_one) ||
-        !backpack.AllowsItemsReceived(t.user_two)) {
-      RejectTradeImpl(trade_id);
-      return;
-    }
-
     // WARNING: There's a whole lot of validity checking stuff that needs to be
-    // done here for a real implementation. (Like whether the items will fit
-    // in each user's backpack.)  This loop swaps items back and forth. It is
-    // still not the most optimized implementation and does not deal with the
-    // case where both backpacks are full. However, it is good enough for
-    // demonstration purposes.
+    // done here for a real implementation. For brevity, I've removed the
+    // validity checking that I did write from the website version, such as
+    // making sure all items are unlocked, that a user can receive items, etc.
 
     uint length = t.user_one_items.length;
     if (t.user_two_items.length > length)
@@ -111,6 +87,8 @@ contract TradeCoordinator {
       if (i < t.user_two_items.length)
         backpack.GiveItemTo(t.user_two_items[i], t.user_one);
     }
+
+    DeleteTradeImpl(trade_id);
   }
 
   function RejectTrade(uint256 trade_id) {
@@ -118,7 +96,7 @@ contract TradeCoordinator {
     if (msg.sender != t.user_two)
       return;
 
-    RejectTradeImpl(trade_id);
+    DeleteTradeImpl(trade_id);
   }
 
   function TradeCoordinator(Backpack system) {
@@ -126,7 +104,7 @@ contract TradeCoordinator {
     trades.length = 1;
   }
 
-  function RejectTradeImpl(uint256 trade_id) private {
+  function DeleteTradeImpl(uint256 trade_id) private {
     Trade t = trades[trade_id];
     delete t.user_one_items;
     delete t.user_two_items;
@@ -154,7 +132,7 @@ bp.UnlockItemFor(has_black_box_id, trade_coordinator)
 trade_coordinator.AcceptTrade(trade_id);
 ```
 
-AcceptTrade(), checking that both items are unlocked for it, actually performs the trade in a safe and atomic matter. And it's built out of primitives that anyone can write.
+`AcceptTrade()`, checking that both items are unlocked for it, actually performs the trade in a safe and atomic matter. And it's built out of primitives that anyone can write.
 
 In the case of a bad offer, User 2 could also do nothing. User 1, who proposed the trade, paid a few cents to do so. As the contract is written above, there's no reason for User 2 to pay a few cents to do the cleanup. (There are fancy tricks to use cleanup to pay for other computation in Ethereum, but I've left them out of this proof of concept for brevity.)
 

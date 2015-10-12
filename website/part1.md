@@ -139,10 +139,12 @@ enum Permissions {
   ModifiableAttribute
 }
 
-function SetPermission(address user, Permissions permission, bool value)
-  returns (bytes32);
-function HasPermission(address user, Permissions permission)
-  constant returns (bool);
+contract Backpack {
+  function SetPermission(address user, Permissions permission, bool value)
+    returns (bytes32);
+  function HasPermission(address user, Permissions permission)
+    constant returns (bool);
+}
 ```
 
 As written, the keypair which deployed the contract has full rights to do anything; if this system were ever to be deployed, revocable "admin" accounts should be created for routine use, granted the necessary permissions to do their jobs. (The original public/private key should sit in a safe somewhere in case of emergencies.)
@@ -156,31 +158,39 @@ Right now, there are _a lot_ of preexisting items in the TF2 universe which coul
 Let's start delving into the interface our contract exposes:
 
 ```cpp
-contract Backpack {
+contract Backpack {                     // Continued.
   // Used to create new items. If the caller has permission to make new items,
-  // create one with the following properties and keep it in the construction
-  // state. (Requires Permissions.GrantItems.)
+  // create one with the following properties and put it in the under
+  // construction state. Returns the item id or 0 if error.
+  //
+  // (Requires Permissions.GrantItems.)
   function CreateNewItem(uint32 defindex, uint16 quality,
                          uint16 origin, address recipient) returns (uint64);
 
-  // Used to import an existing item, which already has a |level| and an
-  // |original_id|. (Requires Permissions.GrantItems.)
+  // Used to import an existing, off-chain item, which already has a |level|
+  // and an |original_id|. Item is returned in the under construction
+  // state. Returns the new item id or 0 if error.
+  //
+  // (Requires Permissions.GrantItems.)
   function ImportItem(uint32 defindex, uint16 quality, uint16 origin,
                       uint16 level, uint64 original_id, address recipient)
       returns (uint64);
 
-  // Used for contracts to add an attribute to an item in the under construction
-  // state. (Requires Permissions.AddAttributesToItem.)
+  // Adds an integer attribute to an item in the under construction state.
+  //
+  // (Requires Permissions.AddAttributesToItem.)
   function SetIntAttribute(uint64 item_id, uint32 attribute_defindex,
                            uint64 value);
 
-  // Marks an item created with CreateNewItem() or ImportItem() as finalized
-  // and ready to be used. No further modifications can be made to this item.
+  // Marks an item in the under construction state as finalized. No further
+  // modifications can be made to this item.
   function FinalizeItem(uint64 item_id);
 
-  // When |item_id| exists, and the item is unlocked for the caller and the
-  // caller has Permissions.AddAttributesToItem, create a new item number for
-  // this item and return it in the construction state. Otherwise returns 0.
+  // When |item_id| exists, and the item is unlocked for the caller, create a
+  // new item number for this item, put it in the under construction state, and
+  // return it. Otherwise returns 0.
+  //
+  // (Requires Permissions.AddAttributesToItem.)
   function OpenForModification(uint64 item_id) returns (uint64);
 }
 ```
@@ -196,25 +206,27 @@ bp.SetIntAttribute(id, 1004, 1077936128);
 bp.FinalizeItem(id);
 ```
 
-The creator of an item builds the item, and then adds all the attributes to that item. They then finalize the item, and no longer have access to modifying it. It is now `recipient_address`'s item to do with as they please.
+The creator of an item builds it, and then adds all the attributes to that item. They then finalize the item, and no longer have access to modifying it. It is now `recipient_address`'s item to do with as they please. The item number permanently refers to that specific item with those specific attributes, and can only be modified by allocating a new item number, such as during `OpenForModification()`. 
 
-Why do it this way? We want a general interface for flexible usage within contracts, and we'll show an example in part 2 which conditionally puts some attributes on an item. An actual production ready version of this system would also include a QuickImportItem() so that an item would be built with a single transaction.
+Why do it with multiple calls? We want a general interface for flexible usage within extension contracts, and we'll show an example in part 2 which conditionally puts some attributes on an item. An actual production ready version of this system would also include a `QuickImportItem()` so that an item would be built with a single transaction.
 
-(An earlier version had a helper QuickImportItem() method which took two arrays of attribute defindexes and attribute values. I developed this proof of concept with a pre-alpha compiler, and said compiler broke for a while passing arrays to contracts. This has since been fixed, but it wasn't necessary for the prototype so I left it out.)
+(An earlier version had a helper `QuickImportItem()` method which took two arrays of attribute defindexes and attribute values. I developed this proof of concept with a pre-alpha compiler, and said compiler broke for a while passing arrays to contracts. This has since been fixed, but it wasn't necessary for the proof of concept so I left it out.)
 
 ### User commands
 
 So, what can a user do with their item themselves? Well, they could give it to another person or delete it:
 
 ```cpp
-contract Backpack {
+contract Backpack {                     // Continued.
   // Give the item to recipient. This will generate a new |item_id|. Returns
-  // the new |item_id|. (May only be called by the item's owner or
-  // unlocked_for.)
+  // the new |item_id|.
+  //
+  // (May only be called by the item's owner or unlocked_for.)
   GiveItemTo(uint64 item_id, address recipient) returns (uint64);
 
-  // Deletes the item. (May only be called by the item's owner or
-  // unlocked_for.)
+  // Deletes the item.
+  //
+  // (May only be called by the item's owner or unlocked_for.)
   function DeleteItem(uint64 item_id);
 }
 ```
@@ -222,32 +234,21 @@ contract Backpack {
 They can't modify it themselves as they don't have the `AddAttributesToItem` permission, so how would they apply paint (among other things) to their items? Every item has an owner, but it also has an `unlocked_for` user, a person or contract that can temporarily act as an item's owner:
 
 ```cpp
-contract Backpack {
-  // Temporarily grant |c| access to |item_id|.
-  function UnlockItemFor(uint64 item_id, address c);
+contract Backpack {                     // Continued.
+  // Allows |user| to act as the |item_id|'s owner.
+  //
+  // (May only be called by |item_id|'s owner.)
+  function UnlockItemFor(uint64 item_id, address user);
 
-  // Revoke non-owner access to |item_id|.
+  // Revokes access to |item_id| by the address that current can act as
+  // |item_id|'s owner.
+  //
+  // (May be called by |item_id|'s owner, or the current address temporarily
+  // acting as the item's owner.)
   function LockItem(uint64 item_id)
 }
 ```
 
-Believe it or not, we now have everything needed to rebuild the entire economy!
+Believe it or not, we now have everything needed to rebuild the item system in Team Fortress 2! We have the entire life-cycle of an item here. We can import them / create them. And then the user can give access to the item to a valve published contract which will create a new item id, and modify the user's item.
 
-### Users unlocking items for modification
-
-In the Valve item system, whenever an item is modified, it gets a new item id. This seems like an important identity property to preserve, so the only way to modify a finalized item should be to give it a new item id:
-
-```cpp
-// As the owner of an item:
-bp.UnlockItemFor(my_item_id, a_valve_contract);
-a_valve_contract.call([my_item_id]);  // Not the real syntax
-
-// Inside the implementation of a_valve_contract:
-new_item = bp.OpenForModification(my_item_id);
-bp.SetIntAttribute(new_item, xxx, yyyyyy);
-bp.FinalizeItem(new_item)
-```
-
-So we have the entire lifecycle of an item here. We can import them / create them. And then the user can give access to the item to a valve published contract which will create a new item id, and modify the user's item.
-
-But what would a contract that adds attributes to an item look like?. We'll explore that in Part 2...
+But what would a contract that adds attributes to an item look like? We'll explore that in Part 2...
