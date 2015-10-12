@@ -15,7 +15,7 @@ One component of the Valve item economy that we haven't addressed yet are items 
 
 ### _Can_ we decentralize it? ...
 
-Yes! We can implement it many ways. We can implement it as part of the main Backpack contract (and that's how I've done so in the prototype):
+Yes! We can implement it many ways. We can implement it as part of the main Backpack contract (and that's how I've done so in the proof of concept):
 
 ```cpp
 contract Backpack {
@@ -35,7 +35,7 @@ It's so boring, isn't it? Sure, there are a few things that the implementation n
 
 ### ...But _should_ we?
 
-We should instead ask if this is a good idea. I've gone ahead and made this a part of the prototype because I'm going for as much decentralization as possible and the removal of all trusted third parties that go down from time to time. But I don't think it's the obviously correct thing to do in a real, production ready implementation of a blockchain backpack.
+We should instead ask if this is a good idea. I've gone ahead and made this a part of the proof of concept because I'm going for as much decentralization as possible and the removal of all trusted third parties that go down from time to time. But I don't think it's the obviously correct thing to do in a real, production ready implementation of a blockchain backpack.
 
 Would you pay a couple of cents per match to record that you killed players with a certain weapon X times, that you scored Y points while wearing this hat, et cetera? How would you go about building a system to do this? Does Valve host a centralized server which acts as a gateway and uses Steam Wallet funds to pay for transaction fees? (If so, what's the point of the exercise if we're still relying on a centralized piece of infrastructure?) Does each registered server have a keypair with the ModifiableAttribute permission? If so, how will the server pay the blockchain transaction fees? Do players have to send Ethereum to a server or the server won't record their statistics? Are players responsible for recording their own stats? If so, what's keeping them from manually crafting messages which claim to have done thousands of kills?
 

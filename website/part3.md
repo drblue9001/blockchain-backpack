@@ -156,7 +156,7 @@ trade_coordinator.AcceptTrade(trade_id);
 
 AcceptTrade(), checking that both items are unlocked for it, actually performs the trade in a safe and atomic matter. And it's built out of primitives that anyone can write.
 
-In the case of a bad offer, User 2 could also do nothing. User 1, who proposed the trade, paid a few cents to do so. As the contract is written above, there's no reason for User 2 to pay a few cents to do the cleanup. (There are fancy tricks to use cleanup to pay for other computation in Ethereum, but I've left them out of this prototype for brevity.)
+In the case of a bad offer, User 2 could also do nothing. User 1, who proposed the trade, paid a few cents to do so. As the contract is written above, there's no reason for User 2 to pay a few cents to do the cleanup. (There are fancy tricks to use cleanup to pay for other computation in Ethereum, but I've left them out of this proof of concept for brevity.)
 
 ### Some notes on implementation
 

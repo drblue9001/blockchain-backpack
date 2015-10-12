@@ -5,7 +5,11 @@ layout: default
 
 ### Abstract
 
-There have been many security and stability problems in the TF2 ecosystem over the last year. I propose moving the recording of ownership of high value items onto the Ethereum blockchain to prevent unauthorized transfer of items and to increase availability of item ownership data in a way that doesn't threaten the Valve item minting monopoly. I provide a proof of concept showing that this is possible.
+As the economy in virtual items has grown in size and represents more real world money, theft and fraud have become rampant. By making use of [blockchain][] technology, game studios could secure their economies against these attacks. I provide a proof of concept using [Ethereum][] to partially record the state of the [Team Fortress 2][tf2] economy.
+
+[tf2]: http://www.teamfortress.com/
+[blockchain]: https://en.wikipedia.org/wiki/Block_chain_(database)
+[Ethereum]: https://www.ethereum.org/
 
 ### Table of Contents
 
@@ -17,16 +21,12 @@ There have been many security and stability problems in the TF2 ecosystem over t
 
 _(more to come)_
 
-### Disclaimer
+### Getting the code
 
-While all the code is Apache 2.0 licensed, this isn't a real project; it is proof of concept to show that such a system is possible, and a sequence of blog posts showing why it is desirable.
-
-If you actually want to build a full version of the system I'm outlining, I suggest that you actually throw away everything I've written (except maybe the interface outlined here), and start over.
-
-### Getting the prototype
-
-You can fetch the code to the prototype and the website by running:
+You can get the code and this website by running:
 
     git clone http://git.blockchainbackpack.org/backpack.git/
 
-This repository has a `website/` folder with this website and a `src/` folder which holds all the contract files. Instructions on building the prototype are in the toplevel README.md file.
+This repository has a `website/` folder with this website and a `src/` folder which holds all the code. Instructions on how to build the proof of concept are in the toplevel README.md file.
+
+All the code is Apache 2.0 licensed, but this is just a proof of concept. If you actually want to build a full version of this system, you may want to start over with the described interface as a guideline.

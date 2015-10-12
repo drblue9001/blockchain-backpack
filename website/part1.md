@@ -201,7 +201,7 @@ The creator of an item builds the item, and then adds all the attributes to that
 
 Why do it this way? We want a general interface for flexible usage within contracts, and we'll show an example in part 2 which conditionally puts some attributes on an item. An actual production ready version of this system would also include a QuickImportItem() so that an item would be built with a single transaction.
 
-(An earlier version had a helper QuickImportItem() method which took two arrays of attribute defindexes and attribute values. I developed this prototype with a pre-alpha compiler, and said compiler broke for a while passing arrays to contracts. This has since been fixed, but it wasn't necessary for the prototype so I left it out.)
+(An earlier version had a helper QuickImportItem() method which took two arrays of attribute defindexes and attribute values. I developed this proof of concept with a pre-alpha compiler, and said compiler broke for a while passing arrays to contracts. This has since been fixed, but it wasn't necessary for the prototype so I left it out.)
 
 ### User commands
 
