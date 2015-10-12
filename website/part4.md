@@ -1,5 +1,5 @@
 ---
-title: "The Tradeoffs Being Made"
+title: "The Trade-offs Being Made"
 layout: page
 prev-page:
     title: "Trading"
@@ -9,10 +9,10 @@ next-page:
     url: part5.html
 ---
 
-The Tradeoffs Being Made
-------------------------
+The Trade-offs Being Made
+-------------------------
 
-In part 1, I talked about how everyone should be at least as well off under a new proposed system as they would be under the old one. I assert that Valve would be better off under this system than they are now, but we need to be clear about what tradeoffs are involved here. Valve would be trading the ability to make arbitrary changes to the item database for increased security. This is a beneficial trade off.
+In part 1, I talked about how everyone should be at least as well off under a new proposed system as they would be under the old one. I assert that Valve would be better off under this system than they are now, but we need to be clear about what trade-offs are involved here. Valve would be trading the ability to make arbitrary changes to the item database for increased security. This is a beneficial trade off.
 
 While writing the first draft of this part, the security problem of the week was [some sort of remote code execution attack][cssrc] against an older version of CounterStrike. The game client wasn't hardened, and malicious servers sent exploits to clients. Once the attackers had control of user's computer, they stole anything of item value. (And no, 2-factor authentication won't help here because the attacker now has control over the user's machine.) As I'm going to press, the vulnerability of the week is a remote code execution bug in [TeamSpeak][], a third party voice communication program used by competitive players.
 
@@ -28,7 +28,7 @@ And increased security makes people feel better about spending money in the ecos
 
 As an added bonus, because block chains are distributed databases, item ownership information becomes much more resilient. There's a [light client protocol][light] which allows applications to just watch the state of a specific contract, while still having some cryptographic assurance about the current state of the world. Users would be able to prove that they own items in game even when the centralized item servers go down.
 
-From a security standpoint, _something_ like the system I'm outlining is needed to stop the rampant hacking, but this system has costs to everyone, and it is important to consider the tradeoffs being made here.
+From a security standpoint, _something_ like the system I'm outlining is needed to stop the rampant hacking, but this system has costs to everyone, and it is important to consider the trade-offs being made here.
 
 ### Downsides for Users
 

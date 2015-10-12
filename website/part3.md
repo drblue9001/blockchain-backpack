@@ -5,7 +5,7 @@ prev-page:
     title: "Item Modification"
     url: part2.html
 next-page:
-    title: "Tradeoffs"
+    title: "Trade-offs"
     url: part4.html
 ---
 
@@ -138,9 +138,9 @@ In the case of a bad offer, User 2 could also do nothing. User 1, who proposed t
 
 ### Some notes on implementation
 
-In a real implementation that Valve would write, the concept of trading would preferably be done through the DoAction() command as introduced in part 2 because you want the user to only reach for their signing hardware once when using official contracts.
+In a real implementation that Valve would write, the concept of trading would preferably be done through the `DoAction()` command as introduced in part 2 because you want the user to only reach for their signing hardware once when using official contracts.
 
-Rather, I've written it this way to make the point that building a robust, trustless trading system doesn't actually need any blessings from Valve, and that the UnlockItemFor() system gives us that flexibility if we want it.
+Rather, I've written it this way to make the point that building a robust, trustless trading system doesn't actually need any blessings from Valve, and that the `UnlockItemFor()` system gives us that flexibility if we want it.
 
 At the beginning of this series, I said that the system should be as close to a Pareto improvement as possible; that all parties in the ecosystem should be at least as well off as they were previously. Users and Valve are not the only participants in the item ecosystem though.
 

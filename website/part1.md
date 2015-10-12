@@ -11,7 +11,7 @@ Part 1: Introduction: The Blockchain Backpack
 
 ### Valve's Item Economy
 
-Valve monetizes their F2P games by selling cosmetic items, versions of the free items which additionally track statistics, tickets to and [digital program books][compendium] about the e-sports matches of their games, et cetera. Valve's Kyle Davis did a talk, [In-Game Economies in Team Fortress 2 and Dota 2][davistalk], which is a good overview about how they think about creating player value.
+Valve monetizes their F2P games by selling cosmetic items, versions of the free items which additionally track statistics, tickets to and [digital program books][compendium] about the e-sports matches of their games, etc. Valve's Kyle Davis did a talk, [In-Game Economies in Team Fortress 2 and Dota 2][davistalk], which is a good overview about how they think about creating player value.
 
 The majority of these items are tradable and salable between players. The value of an item is not just its cosmetic or utility value; it also has secondary market resale value. Users created a vibrant trading market with [pricing guides][bptf]. And Valve has [its own official player to player marketplace][scm], which allows players to buy and sell items in their national currency.
 
@@ -22,15 +22,15 @@ The majority of these items are tradable and salable between players. The value 
 
 ### The Problem
 
-Items in Valve's ecconomy are tied to your Steam account. So we have items of real monetary vaule with a fairly liquid market place protected only by passwords on Windows machines. Breaking into someone's account and clearing out their virtual items for resale has become an epidemic, with dedicated malware attempting to gain control of Steam accounts. Steam support has a extremely poor reputation, so good luck if your account is hijacked.
+Items in Valve's economy are tied to your Steam account. So we have items of real monetary value with a fairly liquid market place protected only by passwords on Windows machines. Breaking into someone's account and clearing out their virtual items for resale has become an epidemic, with dedicated malware attempting to gain control of Steam accounts. Steam support has a extremely poor reputation, so good luck if your account is hijacked.
 
-On top of that, Valve's infrastructure is sometimes unable to deal with the demands placed upon it. Every year, during the Steam Chirstmas and Summer sales, things go to hell. The Steam marketplace usually breaks under the transactional load. Trades between players tend to error out during these weeks. Strange weapons in TF2 (and I assume other games) intermittently stop recording their statistics.
+On top of that, Valve's infrastructure is sometimes unable to deal with the demands placed upon it. Every year, during the Steam Christmas and Summer sales, things go to hell. The Steam marketplace usually breaks under the transactional load. Trades between players tend to error out during these weeks. Strange weapons in TF2 (and I assume other games) intermittently stop recording their statistics.
 
-I write this as a concerned citizen of the Badlands. I am worried about security, as [I own many rare items in TF2][myinv]; I have 15 unusuals, and 7 Australiums. I've tried to direct my worry productively, and thus I've written a series of articles that describe a proof of concept system I've built that decentralizes the Valve item system **in a way that wouldn't allow counterfeit items that weren't blessed by Valve**. In any proposed revamp of an existing system, we want to come as close to a [Pareto improvement][pareto] as possible: everyone should be at least as well off as they are under the current system. This is important because otherwise there is no incentive to change. Valve must be the only entity to create items: it would destabalize the economy and would deny Valve further funds to development of their games. Besides, Valve would never intentionally sign on to a system that hurt them.
+I write this as a concerned citizen of the Badlands. I am worried about security, as [I own many rare items in TF2][myinv]; I have 15 unusuals, and 7 Australiums. I've tried to direct my worry productively, and thus I've written a series of articles that describe a proof of concept system I've built that decentralizes the Valve item system **in a way that wouldn't allow counterfeit items that weren't blessed by Valve**. In any proposed revamp of an existing system, we want to come as close to a [Pareto improvement][pareto] as possible: everyone should be at least as well off as they are under the current system. This is important because otherwise there is no incentive to change. Valve must be the only entity to create items: it would destabilize the economy and would deny Valve further funds to development of their games. Besides, Valve would never intentionally sign on to a system that hurt them.
 
 I propose moving a portion of TF2's backpack system onto a blockchain, and will use Ethereum as an example. All transactions that get incorporated into blocks are digitally signed, often with hardware. (Which fixes many of the security problems around the economy.)
 
-A blockchain is really a decentralized database, solving the issue of intermittent outages of centralized infrastructure. (Which fixes being unable to verify item ownership when Valve's infrastructure fails.) The tradeoffs will be looked at in depth in Part 4.
+A blockchain is really a decentralized database, solving the issue of intermittent outages of centralized infrastructure. (Which fixes being unable to verify item ownership when Valve's infrastructure fails.) The trade-offs will be looked at in depth in Part 4.
 
 [myinv]: http://steamcommunity.com/id/drblue9001/inventory/#440
 [pareto]: http://en.wikipedia.org/wiki/Pareto_efficiency
@@ -41,7 +41,7 @@ Most people have at least heard of [Bitcoin][bitcoin] and think it a currency. A
 
 Instead of having hard coded rules for how to transact the bitcoin currency, Ethereum has a Turing complete scripting language describing how an individual transaction should mutate the ledger. A user, identified by a public/private keypair, can deploy a small program (called a contract) to the Ethereum blockchain, and let other users send message calls to it. This contract then has an address, and will manage its own state as programmed when users send digitally signed messages to it. These transactions are considered to have "run" when they are committed to a block.
 
-(For a more technical introduction to the system, please see the [Ethereum whitepaper][whitepaper], and their page on their [light client protocol][light]. All of the code samples in this document are written in [Solidity][sol].)
+(For a more technical introduction to the system, please see the [Ethereum white paper][whitepaper], and their page on their [light client protocol][light]. All of the code samples in this document are written in [Solidity][sol].)
 
 During this year's April Fools day, the Ethereum folks put out an announcement [that they were merging with Valve][fools]. While this was meant as a joke...parts of it are actually a really good idea.
 
@@ -107,7 +107,7 @@ All of this could be stored in a different medium. We could write an Ethereum co
 
 ### A quick overview of what we want to build
 
-If we were going to buid an idealized backpack, what properties should it have?
+If we were going to build an idealized backpack, what properties should it have?
 
 * Only Valve (or contracts authorized by Valve) should be able to create items,
   and to add code to the system which is able to modify items (paint,
@@ -116,7 +116,7 @@ If we were going to buid an idealized backpack, what properties should it have?
   * They should be able to trade it to another player.
   * They should be able to run Valve blessed modification code.
 
-We can build an Ethereum contract that does the above, and add hooks so Valve can continue to deploy new features. The code to this contract is really boring; it's a couple of associative arrays. This is good. Boring code is code that is easy to reason about and more likely to be correct. However, this does not make for a good blog post so I will instead spend the rest of this first post outlining the interface of the main contract. The main contract will perform the core storage of items, authentication, and dispatch to extension contracts for item modification and futher expansion of the system. Instructions on checking out the entire source tree are [on the front page](index.html).
+We can build an Ethereum contract that does the above, and add hooks so Valve can continue to deploy new features. The code to this contract is really boring; it's a couple of associative arrays. This is good. Boring code is code that is easy to reason about and more likely to be correct. However, this does not make for a good blog post so I will instead spend the rest of this first post outlining the interface of the main contract. The main contract will perform the core storage of items, authentication, and dispatch to extension contracts for item modification and further expansion of the system. Instructions on checking out the entire source tree are [on the front page](index.html).
 
 <image style="float:right; width: 175px; margin: 10px;" src="trezor.jpg" />
 
@@ -149,7 +149,7 @@ contract Backpack {
 
 As written, the keypair which deployed the contract has full rights to do anything; if this system were ever to be deployed, revocable "admin" accounts should be created for routine use, granted the necessary permissions to do their jobs. (The original public/private key should sit in a safe somewhere in case of emergencies.)
 
-When we write a contract representing a Paint Can (we will do so in part 2), we will want to grant it `AddAttributesToItem`. When we write a contrat representing a Crate (part 6), we will want to grant it `GrantItems`, too. The Backpack Expander would receive `BackpackCapacity`. Etc.
+When we write a contract representing a Paint Can (we will do so in part 2), we will want to grant it `AddAttributesToItem`. When we write a contract representing a Crate (part 6), we will want to grant it `GrantItems`, too. The Backpack Expander would receive `BackpackCapacity`. Etc.
 
 ### The flow of Valve granting an item
 
