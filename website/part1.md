@@ -9,35 +9,16 @@ next-page:
 Part 1: Introduction: The Blockchain Backpack
 ---------------------------------------------
 
-### Introduction to Valve
+### Valve's Item Economy
 
-Valve has one of the few free to play (F2P) monetization models which doesn't feel exploitive. In a F2P game like King.com's Candy Crush, the game is balanced around throwing up barriers to progressing, and then trying to sell one-time consumable items to remove these barriers. In contrast, Valve's Dota 2 and Team Fortress 2 are free to play games where all players are on an even footing. In [the terms of Ramin Shokrizade][topf2p], Candy Crush is a Money Game, while Valve's offerings are Skill Games.
+Valve monetizes their F2P games by selling cosmetic items, versions of the free items which additionally track statistics, tickets to and [digital program books][compendium] about the e-sports matches of their games, et cetera. Valve's Kyle Davis did a talk, [In-Game Economies in Team Fortress 2 and Dota 2][davistalk], which is a good overview about how they think about creating player value.
 
-Valve monitizes their F2P games by selling cosmetic items, versions of the free items which additionally track statistics, tickets to and [digital program books][compendium] about the e-sports matches of their games, et cetera. Valve's Kyle Davis did a talk, [In-Game Economies in Team Fortress 2 and Dota 2][davistalk], which is a good overview about how they think about creating player value.
+The majority of these items are tradable and salable between players. The value of an item is not just its cosmetic or utility value; it also has secondary market resale value. Users created a vibrant trading market with [pricing guides][bptf]. And Valve has [its own official player to player marketplace][scm], which allows players to buy and sell items in their national currency.
 
-The majority of these items are tradable between players. The value of an item is not just its cosmetic or utility valule, it also has secondary market resale value. Users created a vibrant trading market with [pricing guides][bptf]. And Valve has [its own official player to player marketplace][scm], which uses national fiat currency.
-
-[topf2p]: http://www.gamasutra.com/blogs/RaminShokrizade/20130626/194933/The_Top_F2P_Monetization_Tricks.php
 [compendium]: http://www.dota2.com/international/compendium/0/1/0/
 [davistalk]: https://youtu.be/RHC-uGDbu7s
 [bptf]: https://backpack.tf/
 [scm]: http://steamcommunity.com/market
-
-### Introduction to Ethereum
-
-Most people have at least heard of [Bitcoin][bitcoin], and think it a currency. A better model would be to think of it as a secure, shared database that has hard coded rules for dealing with a specific currency. Ethereum is one of the many "Bitcoin 2.0" projects being developed to expand the use of authenticated, distributed databases to other purposes.
-
-Instead of having hard coded rules for how to transact the bitcoin currency, Ethereum has a Turing complete scripting language describing how an individual transaction should mutate the ledger. A user, identified by a public/private keypair, can deploy a small program (called a contract) to the Ethereum blockchain, and let other users send message calls to it. This program then has an address, and will manage its own state as programmed when users send digitally signed messages to it. These transactions are considered to have "run" when they are committed to a block.
-
-(For a more technical introduction to the system, please see the [Ethereum whitepaper][whitepaper], and their page on their [light client protocol][light]. Most of the code samples in this document are written in [Solidity][sol].)
-
-During this year's April Fools day, the Ethereum folks put out an announcement [that they were merging with Valve][fools]. While this was meant as a joke...parts of it are actually a really good idea.
-
-[bitcoin]: https://bitcoin.org/
-[whitepaper]: https://github.com/ethereum/wiki/wiki/White-Paper
-[light]: https://github.com/ethereum/wiki/wiki/Light-client-protocol
-[sol]: https://github.com/ethereum/wiki/wiki/Solidity-Tutorial
-[fool]: https://blog.ethereum.org/2015/04/01/ethereums-unexpected-future-direction/
 
 ### The Problem
 
@@ -45,14 +26,32 @@ Items in Valve's ecconomy are tied to your Steam account. So we have items of re
 
 On top of that, Valve's infrastructure is sometimes unable to deal with the demands placed upon it. Every year, during the Steam Chirstmas and Summer sales, things go to hell. The Steam marketplace usually breaks under the transactional load. Trades between players tend to error out during these weeks. Strange weapons in TF2 (and I assume other games) intermittently stop recording their statistics.
 
-I write this as a concerned citizen of the Badlands. I am worried about security, as [I own many rare items in TF2][myinv]; I have 15 unusuals, and 7 Australiums. I've tried to direct my worry productively, and thus I've written a series of articles that describe a proof of concept system I've built that decentralizes the Valve item system **in a way that wouldn't threaten Valve's monopoly on item generation**. In any proposed revamp of an existing system, we want to come as close to a [Pareto improvement][pareto] as possible: everyone should be at least as well off as they are under the current system. This is important because otherwise there is no incentive to change. Valve's item minting monopoly must not be impinged: it would destabalize the economy and would deny Valve further funds to development of their games. Besides, Valve would never intentionally sign on to a system that hurt them.
+I write this as a concerned citizen of the Badlands. I am worried about security, as [I own many rare items in TF2][myinv]; I have 15 unusuals, and 7 Australiums. I've tried to direct my worry productively, and thus I've written a series of articles that describe a proof of concept system I've built that decentralizes the Valve item system **in a way that wouldn't allow counterfeit items that weren't blessed by Valve**. In any proposed revamp of an existing system, we want to come as close to a [Pareto improvement][pareto] as possible: everyone should be at least as well off as they are under the current system. This is important because otherwise there is no incentive to change. Valve must be the only entity to create items: it would destabalize the economy and would deny Valve further funds to development of their games. Besides, Valve would never intentionally sign on to a system that hurt them.
 
-I propose moving a portion of TF2's backpack system onto a blockchain, and will use Ethereum as an example. A blockchain is really a decentralized database, solving the issue of intermittent outages of centralized infrastructure. (Which fixes being unable to verify item ownership when Valve's infrastructure fails.) All messages that get incorporated into blocks are digitally signed, often with hardware. (Which fixes many of the security problems around the economy.) The tradeoffs will be looked at in depth in Part 4.
+I propose moving a portion of TF2's backpack system onto a blockchain, and will use Ethereum as an example. All transactions that get incorporated into blocks are digitally signed, often with hardware. (Which fixes many of the security problems around the economy.)
+
+A blockchain is really a decentralized database, solving the issue of intermittent outages of centralized infrastructure. (Which fixes being unable to verify item ownership when Valve's infrastructure fails.) The tradeoffs will be looked at in depth in Part 4.
 
 [myinv]: http://steamcommunity.com/id/drblue9001/inventory/#440
 [pareto]: http://en.wikipedia.org/wiki/Pareto_efficiency
 
-## What is an item in this system anyway
+### Introduction to Ethereum
+
+Most people have at least heard of [Bitcoin][bitcoin] and think it a currency. A better model would be to think of it as a secure shared database that has hard coded rules for dealing with a specific currency. Ethereum is one of the many "Bitcoin 2.0" projects being developed to expand the use of authenticated, distributed databases to other purposes.
+
+Instead of having hard coded rules for how to transact the bitcoin currency, Ethereum has a Turing complete scripting language describing how an individual transaction should mutate the ledger. A user, identified by a public/private keypair, can deploy a small program (called a contract) to the Ethereum blockchain, and let other users send message calls to it. This contract then has an address, and will manage its own state as programmed when users send digitally signed messages to it. These transactions are considered to have "run" when they are committed to a block.
+
+(For a more technical introduction to the system, please see the [Ethereum whitepaper][whitepaper], and their page on their [light client protocol][light]. All of the code samples in this document are written in [Solidity][sol].)
+
+During this year's April Fools day, the Ethereum folks put out an announcement [that they were merging with Valve][fools]. While this was meant as a joke...parts of it are actually a really good idea.
+
+[bitcoin]: https://bitcoin.org/
+[whitepaper]: https://github.com/ethereum/wiki/wiki/White-Paper
+[light]: https://github.com/ethereum/wiki/wiki/Light-client-protocol
+[sol]: https://github.com/ethereum/wiki/wiki/Solidity-Tutorial
+[fools]: https://blog.ethereum.org/2015/04/01/ethereums-unexpected-future-direction/
+
+### What is an item in this system anyway?
 
 If you were to sign up for a Steam API key and access the raw backpack data, you'd be left with an array of things like this (I've censored out ID numbers here):
 
@@ -121,14 +120,14 @@ We can build an Ethereum contract that does the above, and add hooks so Valve ca
 
 <image style="float:right; width: 175px; margin: 10px;" src="trezor.jpg" />
 
-Given that all interactions with this contract are done through digitally signed messages, people's backpack identity becomes a public/private keypair. This brings us to the one thing we won't prototype: dedicated hardware to protect the private key and perform signing of messages that get sent to the backpack system. Given the prevalence of remote access trojans as a way to bypass Valve's existing two-factor authentication, any system that relies on the security of a user's desktop is non-starter. I will instead hand-wave towards the Bitcoin communities hardware wallets which perform a similar function: [Trezor][trezor] (shown right), [Ledger Wallet][ledger], smart cards with secure elements, etc. Steam would prepare a transaction request and would send it to the signing hardware. The signing hardware would show the transaction to the user on an embedded screen. The user would have to physically press a button on the signing hardware to sign the proposed transaction.
+Given that all interactions with this contract are done through digitally signed transactions, people's backpack identity becomes a public/private keypair. This brings us to the one thing we won't prototype: dedicated hardware to protect the private key and perform signing of transactions that get sent to the backpack system. Given the prevalence of remote access trojans as a way to bypass Valve's existing two-factor authentication, any system that relies on the security of a user's desktop is non-starter. I will instead hand-wave towards the Bitcoin communities hardware wallets which perform a similar function: [Trezor][trezor] (shown right), [Ledger Wallet][ledger], smart cards with secure elements, etc. Steam would prepare a transaction request and would send it to the signing hardware. The signing hardware would show the transaction to the user on an embedded screen. The user would have to physically press a button on the signing hardware to sign the proposed transaction.
 
 [trezor]: https://www.bitcointrezor.com/
 [ledger]: https://www.ledgerwallet.com/
 
 ### Representing permissions
 
-All users will interact with the central backpack contract. In a system where different users interact with the same program, we need a way of keeping track of what users have which capabilities. For instance, a random person with a backpack should not be able to create items out of thin air. We should create a system of permissions to enforce the principle of least privilege.
+All users will interact with the central backpack contract. In a system where different users interact with the same contract, we need a way of keeping track of what users have which capabilities. For instance, a random person with a backpack should not be able to create items out of thin air. We should create a system of permissions to enforce the principle of least privilege.
 
 ```cpp
 enum Permissions {
@@ -148,7 +147,7 @@ function HasPermission(address user, Permissions permission)
 
 As written, the keypair which deployed the contract has full rights to do anything; if this system were ever to be deployed, revocable "admin" accounts should be created for routine use, granted the necessary permissions to do their jobs. (The original public/private key should sit in a safe somewhere in case of emergencies.)
 
-When we write a contract representing a Paint Can (we will do so in part 2), we will want to grant it `AddAttributesToItem`. When we write a contrat representing a Crate (part 5), we will want to grant it `GrantItems`, too. The Backpack Expander would receive `BackpackCapacity`. Etc.
+When we write a contract representing a Paint Can (we will do so in part 2), we will want to grant it `AddAttributesToItem`. When we write a contrat representing a Crate (part 6), we will want to grant it `GrantItems`, too. The Backpack Expander would receive `BackpackCapacity`. Etc.
 
 ### The flow of Valve granting an item
 
@@ -170,8 +169,8 @@ contract Backpack {
                       uint16 level, uint64 original_id, address recipient)
       returns (uint64);
 
-  // Used for contracts to add an attribute to an item that we just started
-  // building. (Requires Permissions.AddAttributesToItem.)
+  // Used for contracts to add an attribute to an item in the under construction
+  // state. (Requires Permissions.AddAttributesToItem.)
   function SetIntAttribute(uint64 item_id, uint32 attribute_defindex,
                            uint64 value);
 
@@ -181,7 +180,7 @@ contract Backpack {
 
   // When |item_id| exists, and the item is unlocked for the caller and the
   // caller has Permissions.AddAttributesToItem, create a new item number for
-  // this item and return it. Otherwise returns 0.
+  // this item and return it in the construction state. Otherwise returns 0.
   function OpenForModification(uint64 item_id) returns (uint64);
 }
 ```

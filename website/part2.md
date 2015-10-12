@@ -129,7 +129,7 @@ bp.AddIntAtributeToItemSchema(5046, 261, 5801378);
 
 Now that we have the schema of paint cans set so we can instantiate them and use them, let's describe exactly what `UseItem()` does. It looks at the schema of the first item in the list of incoming ids. If that exists and has a contract, it unlocks all the incoming items for that contract so that contract can modify those items. Then it calls the contract with the item_ids. Then it locks any still existing items after the call.
 
-This lets a user modify their items using code blessed by Valve, only when they wish. As each transaction needs a separate button press on the theoretical signing hardware, we want this user request to be a single signed message.
+This lets a user modify their items using code blessed by Valve, only when they wish. As each transaction needs a separate button press on the theoretical signing hardware, we want this user request to be a single signed transaction.
 
 ### Removing the paint job
 
@@ -163,7 +163,7 @@ contract RestorePaintJob is MutatingExtensionContract {
 
 The implementation of this is once again straightforward: Check validity, open for modifications, remove attributes, finalize.
 
-We want to invoke it similarly to painting the item, in a single message. Ideally:
+We want to invoke it similarly to painting the item, in a single transaction. Ideally:
 
 ```cpp
 // As the owner of |painted_item_id|.
