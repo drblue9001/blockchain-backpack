@@ -20,9 +20,11 @@ This happens way too often in the Valve ecosystem.
 
 ### The Upsides
 
-These attacks happen because having access to a user's computer is all you need to steal their items. Installing a remote control trojan gives you access to a user's logged in Steam interface. Since most users stay logged in to their webmail, the trade confirmation emails will only stop purely automated attacks.
+These attacks happen because having access to a user's computer is all you need to steal their items. Installing a remote control trojan gives you access to a user's logged in Steam interface. Since most users stay logged in to their webmail, the trade confirmation emails will only stop purely automated attacks. From a security standpoint, the user's machine can't be trusted. Just because a logged in Steam client sends a command doesn't mean that the user initiated that command.
 
-Contrast this with the system I'm proposing, using dedicated [Trezor][trezor]-like hardware for signing digital transactions. The attacker causes the steam client to generate the command to perform the trade, which is then displayed on the screen of the signing hardware. To actually digitally sign the command to perform the trade, the user has to actually press a button on the signing hardware, where the trade would also be displayed on the signing hardware's screen. This makes large classes of current attacks impossible, which lowers Valve's support costs and stops the inflation caused by Steam Support duped items.
+Valve appears to have realized this as they've just announced that people who use a smartphone for two-factor authentication will need to provide a 2nd factor authentication code from their phone on every trade they make. This is a massive improvement over the status quo, but not everyone has a smartphone, and it's not like the [security story on Android is much better than Windows][android].
+
+Contrast this with the system I'm proposing, using dedicated [Trezor][trezor]-like hardware for signing digital transactions. Single purpose devices can be manufactured extremely cheaply and are more secure because they don't have the attack surface of a general purpose computer. They can be used when attached to compromised machines. An attacker who has taken over a user's computer can cause the steam client to generate a command to perform a malicious trade, but said trade would be displayed on the screen of the signing hardware. To actually perform the trade, the user would have to press a button on the signing hardware. This makes large classes of current attacks impossible, which lowers Valve's support costs and stops the inflation caused by Steam Support duped items.
 
 And increased security makes people feel better about spending money in the ecosystem. My backpack is worth thousands of dollars and I know that I'm one vulnerability in a program I use away from possibly losing it all. A user can do everything right and still have their items stolen because of a zero day exploit in a program they use. Giving people confidence in and of itself would make Valve more money.
 
@@ -50,6 +52,7 @@ Valve has a policy of retroactively modifying a player's items to be untradable 
 
 Finally, Valve currently doesn't gain any revenue from the high end unusual market as their Steam Marketplace will only accept sell orders up to $400. (For reference, a Golden Frying Pan usually goes for over $2000. A Showstopper Conga goes for $800. And don't even _look_ at what Burning Team Captains go for!) Trading these high value items on chain would be safer, without the chargeback risk that comes with PayPal. However, the Steam Marketplace does transact in lower value items, and Valve takes 15%. There are already 3rd party sellers of TF2 items who settle in fiat money, and this hasn't supplanted the official Marketplace. It's unlikely that any 3rd party marketplace built that interacts with the blockchain would take a large bite out of market profits, but it's still a risk that should be listed.
 
+[android]: http://androidvulnerabilities.org/
 [cssrc]: https://www.reddit.com/r/GlobalOffensive/comments/3jpyhh/do_not_join_unkown_cs_source_servers_via_ip/
 [TeamSpeak]: http://forum.teamspeak.com/showthread.php/120755-SECURITY-UPDATE-TeamSpeak-3-Client-3-0-18-1-is-Available
 [trezor]: https://www.bitcointrezor.com/
