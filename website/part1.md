@@ -26,13 +26,14 @@ Items in Valve's economy are tied to your Steam account. So we have items of rea
 
 On top of that, Valve's infrastructure is sometimes unable to deal with the demands placed upon it. Every year, during the Steam Christmas and Summer sales, things go to hell. The Steam marketplace usually breaks under the transactional load. Trades between players tend to error out during these weeks. Strange weapons in TF2 (and I assume other games) intermittently stop recording their statistics.
 
-I write this as a concerned citizen of the Badlands. I am worried about security, as [I own many rare items in TF2][myinv]; I have 15 unusuals, and 7 Australiums. I've tried to direct my worry productively, and thus I've written a series of articles that describe a proof of concept system I've built that decentralizes the Valve item system **in a way that wouldn't allow counterfeit items that weren't blessed by Valve**. In any proposed revamp of an existing system, we want to come as close to a [Pareto improvement][pareto] as possible: everyone should be at least as well off as they are under the current system. This is important because otherwise there is no incentive to change. Valve must be the only entity to create items: it would destabilize the economy and would deny Valve further funds to development of their games. Besides, Valve would never intentionally sign on to a system that hurt them.
+I write this as a concerned citizen of the Badlands. I am worried about security, as [I own many rare items in TF2][myinv]--including [a Golden Frying Pan][pan], one of the rarest items in the game. I've tried to direct my worry productively, and thus I've written a series of articles that describe a proof of concept system I've built that decentralizes the Valve item system **in a way that wouldn't allow counterfeit items that weren't blessed by Valve**. In any proposed revamp of an existing system, we want to come as close to a [Pareto improvement][pareto] as possible: everyone should be at least as well off as they are under the current system. This is important because otherwise there is no incentive to change. Valve must be the only entity to create items: it would destabilize the economy and would deny Valve further funds to development of their games. Besides, Valve would never intentionally sign on to a system that hurt them.
 
 I propose moving a portion of TF2's backpack system onto a blockchain, and will use Ethereum as an example. All transactions that get incorporated into blocks are digitally signed, often with hardware. (Which fixes many of the security problems around the economy.)
 
 A blockchain is really a decentralized database, solving the issue of intermittent outages of centralized infrastructure. (Which fixes being unable to verify item ownership when Valve's infrastructure fails.) The trade-offs will be looked at in depth in Part 4.
 
 [myinv]: http://steamcommunity.com/id/drblue9001/inventory/#440
+[pan]: http://steamcommunity.com/id/drblue9001/inventory/#440_2_4246791188
 [pareto]: http://en.wikipedia.org/wiki/Pareto_efficiency
 
 ### Introduction to Ethereum
