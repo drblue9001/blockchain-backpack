@@ -2,9 +2,6 @@
 title: "Crates and the Quality of Randomness"
 layout: page
 prev-page:
-    title: "Trade-offs"
-    url: part4.html
-prev-page:
     title: "Statistics"
     url: part5.html
 ---
@@ -32,7 +29,9 @@ Programmers will immediately recognize that somehow `block.blockhash(block.numbe
 
 Up to this point, I've tried to not talk about how blockchains work. Every block in a blockchain has a number. Block 2 comes after Block 1. Block 3 comes after Block 2. Miners on the network are competing to create the next block--if the last block that everyone knows about is Block 3, everyone is now competing to generate Block 4. `block.number` refers to the number of the block that this transaction is a part of.
 
-Every block also has a hash of its contents. Ethereum lets you access the last 255 block hashes from within your program. So we use the block hash of the previous block as a piece of entropy. We can now describe the attack against this low quality RNG: the user can time when they submit their transaction. If an attacker wants an item with a specific level, they could prepare the transaction, wait until a blockhash exists that would give them that item number.
+Every block also has a hash of the transactions it contains. Ethereum lets you access the last 255 block hashes from within your program. For example, if everyone in the network is working to generate Block 4, you can access the hash of Block 3 and earlier. (You can't access the hash of Block 4 as it hasn't been generated yet.) So we can use the hash of the previous block as a piece of entropy.
+
+We can now describe the attack against this low quality RNG: the user can time when they submit their transaction. If an attacker wants an item with a specific level, they could prepare a transaction, and then wait until a blockhash exists that would give them that item number.
 
 For something like level numbers, this probably doesn't matter. For something like crates, it obviously does.
 
