@@ -35,7 +35,7 @@ We can now describe the attack against this low quality RNG: the user can time w
 
 For something like level numbers, this probably doesn't matter. For something like crates, it obviously does.
 
-### Better Living through Precommitment
+### Better Living Through Precommitment
 
 We can build from this low quality RNG and make a high quality RNG by adding time. An adversary can subvert the previous RNG by timing when they submit their transaction to the system. The obvious solution is to precommit to using a blockhash in the future:
 
@@ -92,7 +92,7 @@ Miner collusion is required to successfully attack this system, and even then, i
 
 Mining is computationally intensive; for an attacker to have any remote chance of success, they would need to have many multiples of the entire network's current hashrate.
 
-### Does this even make sense to do?
+### Does This Even Make Sense to Do?
 
 It makes more sense to give people the option of uncrating on the blockchain than recording statistics. Uncrating is an opt-in activity. However, doing so comes at the cost of multiple transactions. Would people pay for multiple transactions to uncrate? Perhaps. But would they pay the additional time? They would have to wait for the first block to be mined for the precommitment, wait for the second and third blocks for the hashes, and then would have to wait for a fourth block for executing the precommitment. At an average 12 second block time, would people wait 48 seconds to see the result of their uncrating? Especially when uncrating in a centralized manor takes 5 seconds.
 

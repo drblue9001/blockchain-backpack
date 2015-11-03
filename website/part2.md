@@ -14,20 +14,20 @@ Extension and Blockchain Item Modification
 
 In the previous part, we described why we should move parts of Valve's item system onto the blockchain and built an interface for the basics of handling items. In part 2, we're going to build the interfaces that would allow Valve to deploy code to modify items.
 
-### More things to do!
+### More Things to Do!
 
 These games have been built piece-wise over multiple years. In the case of Team Fortress 2, first the game launched. Then [the ability to have different weapons][goldrush] was added. Later, the [ability to paint items][mannconomy] was added. As time went on, they added new ways to modify items, and I expect that we'll see many more new ways to modify items in the future. We don't just need to support the current feature list, but need to build up a way to continue to extend the system. So let's make some general interfaces.
 
 [goldrush]: https://wiki.teamfortress.com/wiki/Gold_Rush_Update
 [mannconomy]: https://wiki.teamfortress.com/wiki/Mann-Conomy_Update
 
-### Painting as an example
+### Painting as an Example
 
 There are two sorts of actions taken on items: an item is consumed or otherwise used to modify/create an item, or a contextual named action is invoked on an item. Painting items is a good example of both: the [paint can][pc] is an example of an item consumed to change the color of an item, and the Restore command is an example of a command that removes the effects of the paint can.
 
 [pc]: https://wiki.teamfortress.com/wiki/Paint_Can
 
-### Show me the code.
+### Show Me the Code
 
 Using a Paint Can copies some attributes from the Paint Can to the target item, then consumes the Paint Can. Let's jump into the deep end of the pool and eventually write the lifeguard:
 
@@ -129,7 +129,7 @@ Now that we have the schema of paint cans set so we can instantiate them and use
 
 This lets a user modify their items using code blessed by Valve, only when they wish. As each transaction needs a separate button press on the theoretical signing hardware, we want this user request to be a single signed transaction.
 
-### Removing the paint job
+### Removing the Paint Job
 
 There is another sort of piece of extension code: actions that can be performed on items which aren't associated with a tool item. Let's look at the mirror of the Paint Can: the restore paint job command:
 

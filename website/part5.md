@@ -16,7 +16,7 @@ One component of the Valve item economy that we haven't addressed yet are items 
 
 [Strange]: https://wiki.teamfortress.com/wiki/Strange
 
-### _Can_ we decentralize it? ...
+### _Can_ We Decentralize It? ...
 
 Yes! We can implement it many ways. We can implement it as part of the main Backpack contract (and that's how I've done so in the proof of concept):
 
@@ -36,7 +36,7 @@ We could also implement as an extension contract (as seen in part 2) and store m
 
 It's so boring, isn't it? Sure, there are a few things that the implementation needs to keep track of: We need to ensure that only attributes marked as modifiable can be changed, and that `GiveItemTo()` clears all modifiable attributes. (You can see tests for all of these situations in the python unit tests.)
 
-### ...But _should_ we?
+### ...But _Should_ We?
 
 We should instead ask if this is a good idea. I've gone ahead and made this a part of the proof of concept because I'm going for as much decentralization as possible and the removal of all trusted third parties that go down from time to time. But I don't think it's the obviously correct thing to do in a real, production ready implementation of a blockchain backpack.
 
