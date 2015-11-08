@@ -151,7 +151,7 @@ contract Backpack {
 
 As written, the keypair which deployed the contract has full rights to do anything; if this system were ever to be deployed, revocable "admin" accounts should be created for routine use, granted the necessary permissions to do their jobs. (The original public/private key should sit in a safe somewhere in case of emergencies.)
 
-When we write a contract representing a [Paint Can][paintcan] (we will do so in [part 2][p2]), we will want to grant it `AddAttributesToItem`. When we write a contract representing a [Crate][crate] ([part 6][p6]), we will want to grant it `GrantItems`, too. The [Backpack Expander][expander] would receive `BackpackCapacity`. Etc.
+When we write a contract representing a [Paint Can][paintcan] (we will do so in [Part 2][p2]), we will want to grant it `AddAttributesToItem`. When we write a contract representing a [Crate][crate] ([part 6][p6]), we will want to grant it `GrantItems`, too. The [Backpack Expander][expander] would receive `BackpackCapacity`. Etc.
 
 [paintcan]: https://wiki.teamfortress.com/wiki/Paint_Can
 [crate]: https://wiki.teamfortress.com/wiki/Crate
@@ -216,7 +216,7 @@ bp.FinalizeItem(id);
 
 The creator of an item builds it and then adds all the attributes to that item. They then finalize the item and no longer have access to modifying it. It is now `recipient_address`'s item to do with as they please. The item number permanently refers to that specific item with those specific attributes and can only be modified by allocating a new item number such as during `OpenForModification()`.
 
-Why do it with multiple calls? We want a general interface for flexible usage within extension contracts, and we'll show an example in part 2 which conditionally puts some attributes on an item. An actual production ready version of this system would also include a `QuickImportItem()` so that an item would be built with a single transaction.
+Why do it with multiple calls? We want a general interface for flexible usage within extension contracts, and we'll show an example in Part 2 which conditionally puts some attributes on an item. An actual production ready version of this system would also include a `QuickImportItem()` so that an item would be built with a single transaction.
 
 (An earlier version had a helper `QuickImportItem()` method which took two arrays of attribute defindexes and attribute values. I developed this proof of concept with a pre-alpha compiler, and said compiler broke for a while passing arrays to contracts. This has since been fixed, but it wasn't necessary for the proof of concept so I left it out.)
 

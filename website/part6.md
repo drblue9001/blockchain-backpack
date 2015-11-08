@@ -9,9 +9,11 @@ prev-page:
 Crates and the Quality of Randomness
 ------------------------------------
 
-Most of the money made in the Valve item ecosystem comes from crates. Crates are items that, when opened with a key, give a random item from a loot table. Crates are random drops in-game, but keys are purchasable for $2.50. This is how these games make the majority of their money. However, there's a real variance in the value of the objects that come out of crates. Of the nine items in Crate #1, two of the items are worth $5, one of them is worth $1, and the other six are worth a cent.
+Most of the money made in the Valve item ecosystem comes from crates. Crates are items that, when opened with a key, give a random item from a loot table. Crates are random drops in-game, but keys are purchasable for $2.50. However, there's a real variance in the value of the objects that come out of crates. Of the nine items in [Crate Series #1][], two of the items are worth five dollars, one of them is worth one dollar, and the other six are worth a cent.
 
-We need a way to get _unpredictable_ psuedorandom numbers out of this system; if the system was manipulable, then users would manipulate it to get the high value items instead of the low value items. In this article, we'll present a way to generate expensive to manipulate random numbers and use them to make a partial implementation of TF2 Crate #1.
+[Crate #1]: https://wiki.teamfortress.com/wiki/Mann_Co._Supply_Crate/Retired_series#Series_.231
+
+We need a way to get _unpredictable_ psuedorandom numbers out of this system so users can't manipulate it to always get the high value items.
 
 ### Low Quality Randomness
 
@@ -33,11 +35,13 @@ Every block also has a hash of the transactions it contains. Ethereum lets you a
 
 We can now describe the attack against this low quality RNG: the user can time when they submit their transaction. If an attacker wants an item with a specific level, they could prepare a transaction, and then wait until a blockhash exists that would give them that item number.
 
-For something like level numbers, this probably doesn't matter. For something like crates, it obviously does.
+For something like [level numbers][], this probably doesn't matter. For something like crates with loot tables, it does.
+
+[level numbers]: https://wiki.teamfortress.com/wiki/Level
 
 ### Better Living Through Precommitment
 
-We can build from this low quality RNG and make a high quality RNG by adding time. An adversary can subvert the previous RNG by timing when they submit their transaction to the system. The obvious solution is to precommit to using a blockhash in the future:
+We can build from this low quality RNG and make a high quality RNG by adding time. An adversary can subvert the previous RNG by timing when they submit their transaction to the system. We can prevent this by precommitting to using a blockhash in the future:
 
 ```cpp
 contract Crate {                      // Partial
@@ -96,4 +100,4 @@ Mining is computationally intensive; for an attacker to have any remote chance o
 
 It makes more sense to give people the option of uncrating on the blockchain than recording statistics. Uncrating is an opt-in activity. However, doing so comes at the cost of multiple transactions. Would people pay for multiple transactions to uncrate? Perhaps. But would they pay the additional time? They would have to wait for the first block to be mined for the precommitment, wait for the second and third blocks for the hashes, and then would have to wait for a fourth block for executing the precommitment. At an average 12 second block time, would people wait 48 seconds to see the result of their uncrating? Especially when uncrating in a centralized manor takes 5 seconds.
 
-Something like uncrating should be included for completion sake, but I'm uncertain that it would get any use in the wild.
+Something like uncrating should be included for completeness, but it may not see use in practice.

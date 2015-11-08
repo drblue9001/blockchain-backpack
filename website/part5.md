@@ -12,11 +12,11 @@ next-page:
 Statistics and Stranges on the Blockchain
 -----------------------------------------
 
-One component of the Valve item economy that we haven't addressed yet are items which record statistics about their own use. Hats that keep track of the number of points scored while wearing them. Guns that keep track of the number of players killed with them. In TF2, these items are called [Strange][]. Currently, these are handled with centralized infrastructure; there is a central item server that everyone talks to.
+One component of the Valve item economy that we haven't addressed yet are items which record statistics about their own use: hats that keep track of the number of points scored while wearing them, guns that keep track of the number of players killed with them, event based items which keep track of statistics over a set time period, etc. In TF2, these items are called [Strange][]. Currently, these are handled via a central item server that everyone talks to.
 
 [Strange]: https://wiki.teamfortress.com/wiki/Strange
 
-### _Can_ We Decentralize It? ...
+### Can We Decentralize It? ...
 
 Yes! We can implement it many ways. We can implement it as part of the main Backpack contract (and that's how I've done so in the proof of concept):
 
@@ -32,11 +32,11 @@ contract Backpack {
 }
 ```
 
-We could also implement as an extension contract (as seen in part 2) and store mutable data outside the main item definition. Ethereum is Turing complete, there are a lot of options.
+We could also implement as an extension contract (as seen in Part 2) and store mutable data outside the main item definition. Ethereum is Turing complete, there are a lot of options.
 
-It's so boring, isn't it? Sure, there are a few things that the implementation needs to keep track of: We need to ensure that only attributes marked as modifiable can be changed, and that `GiveItemTo()` clears all modifiable attributes. (You can see tests for all of these situations in the python unit tests.)
+There are a few things that the implementation needs to keep track of: We need to ensure that only attributes marked as modifiable can be changed, and that `GiveItemTo()` clears all modifiable attributes. (You can see tests for all of these situations in the python unit tests.)
 
-### ...But _Should_ We?
+### ...But Should We?
 
 We should instead ask if this is a good idea. I've gone ahead and made this a part of the proof of concept because I'm going for as much decentralization as possible and the removal of all trusted third parties that go down from time to time. But I don't think it's the obviously correct thing to do in a real, production ready implementation of a blockchain backpack.
 

@@ -12,7 +12,7 @@ next-page:
 Extension and Blockchain Item Modification
 ------------------------------------------
 
-In the previous part, we described why we should move parts of Valve's item system onto the blockchain and built an interface for the basics of handling items. In part 2, we're going to build the interfaces that would allow Valve to deploy code to modify items.
+In the previous part, we described why we should move parts of Valve's item system onto the blockchain and built an interface for the basics of handling items. In Part 2, we're going to build the interfaces that would allow Valve to deploy code to modify items.
 
 ### More Things to Do!
 
@@ -27,9 +27,7 @@ There are two sorts of actions taken on items: an item is consumed or otherwise 
 
 [pc]: https://wiki.teamfortress.com/wiki/Paint_Can
 
-### Show Me the Code
-
-Using a Paint Can copies some attributes from the Paint Can to the target item, then consumes the Paint Can. Let's jump into the deep end of the pool and eventually write the lifeguard:
+Using a Paint Can copies some attributes from the Paint Can to the target item, then consumes the Paint Can.
 
 ```cpp
 contract PaintCan is MutatingExtensionContract {
@@ -75,14 +73,14 @@ contract PaintCan is MutatingExtensionContract {
 }
 ```
 
-This is obviously an implementation of an interface. Ideally, how would a user invoke this contract?
+This is an implementation of an interface. Ideally, how would a user invoke this contract?
 
 ```cpp
 // As a user who owns |paint_can_id| and |painted_item_id|:
 backpack.UseItem([paint_can_id, item_to_paint_id]);
 ```
 
-We can have these sort of shorthand semantics by associating a piece of extension code with an item. Up until this point, I haven't mentioned how much of the TF2 item schema would have to be written onto the blockchain, versus served traditionally.
+We can have these sort of shorthand semantics by associating a piece of extension code with an item.
 
 ```cpp
 contract Backpack {                     // Continued.
@@ -101,7 +99,7 @@ contract Backpack {                     // Continued.
 }
 ```
 
-We don't need most of the data in the TF2 item schema on chain; all we need is the possible level range (since we can generate items entirely on-chain), and the address of a contract which provides extension code...such as `PaintCan`. We can set up the schema of the paint cans:
+Up until this point, I haven't mentioned how much of the TF2 item schema would have to be written onto the blockchain, versus served traditionally. We don't need most of the data in the TF2 item schema on chain; all we need is the possible level range (since we can generate items entirely on-chain), and the address of a contract which provides extension code...such as `PaintCan`. We can set up the schema of the paint cans:
 
 ```cpp
 // As a user with SetPermission and ModifySchema:
@@ -179,4 +177,11 @@ bp.SetAction("RestorePaintJob", restore_paint_job_contract);
 
 And we can call `SetItemSchema()` / `SetAction()` on the same item schema / action string as many times as necessary to update what code should be run in case we accidentally deploy a contract with a bug in it.
 
-So we now have a way of modifying an item only when the user requests it, and only with code blessed by Valve. These primitives should be able to implement strangifiers, killstreak kits, chemistry sets, custom name and description tags, Halloween spells, and anything else that modifies items in the game. We have made the system extensible.
+So we now have a way of modifying an item only when the user requests it, and only with code blessed by Valve. These primitives should be able to implement [strangifiers][], [killstreak kits][], [chemistry sets][], [custom name][] and [description tags][], [Halloween spells][], and anything else that modifies items in the game. We have made the system extensible.
+
+[strangifiers]: https://wiki.teamfortress.com/wiki/Strangifier
+[killstreak kits]: https://wiki.teamfortress.com/wiki/Killstreak_Kit
+[chemistry sets]: https://wiki.teamfortress.com/wiki/Chemistry_Set
+[custom name]: https://wiki.teamfortress.com/wiki/Name_Tag
+[description tags]: https://wiki.teamfortress.com/wiki/Description_Tag
+[Halloween spells]: https://wiki.teamfortress.com/wiki/Halloween_Spells
