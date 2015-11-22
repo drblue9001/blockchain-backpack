@@ -5,7 +5,7 @@ layout: default
 
 ### Abstract
 
-As virtual items economies has grown in size and represents more real world money, theft and fraud have become rampant. By making use of [blockchain][] technology, game studios could secure their economies against these attacks. I provide a proof of concept using [Ethereum][] to partially record the state of the [Team Fortress 2][tf2] economy.
+As virtual items economies have grown in size and represent more real world money, theft and fraud have become rampant. By making use of [blockchain][] technology, game studios could secure their economies against these attacks. I provide a proof of concept using [Ethereum][] to partially record the state of the [Team Fortress 2][tf2] economy.
 
 [tf2]: http://www.teamfortress.com/
 [blockchain]: https://en.wikipedia.org/wiki/Block_chain_(database)

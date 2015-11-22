@@ -144,7 +144,7 @@ In a real implementation that Valve would write, the concept of trading would pr
 
 I've written it this way instead to make the point that building a robust, trustless trading system doesn't actually need any blessings from Valve, and that the `UnlockItemFor()` system gives us that flexibility if we want it.
 
-"In Part 1, I said that the system should be as close to a Pareto improvement as possible with all parties in the ecosystem at least as well off as they were previously. However, users and Valve are not the only participants in the item ecosystem.
+In Part 1, I said that the system should be as close to a Pareto improvement as possible with all parties in the ecosystem at least as well off as they were previously. However, users and Valve are not the only participants in the item ecosystem.
 
 [TF2WH][] is an old site that lets users trade their TF2 items for a site internal credit. They were the first site that I traded with when I was new to the TF2 trading scene. They too are a stakeholder in the economy, as are many third party websites. And their site has a simple analog on the blockchain: a contract that manages a backpack, and that buys and sells for its own internal credit. (Both user keypairs and contracts have addresses in the same namespace in Ethereum; assuming it would be allowed, the contract could be given a backpack to manage.)
 
