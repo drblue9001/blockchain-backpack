@@ -2,10 +2,12 @@ This is an experimental reimplementation of the Valve item system on top of the 
 
 The system is described in the following series of blog posts under website/.
 
-* [The Blockchain Backpack](website/part1.md)
-* [Blockchain Item Modification](website/part2.md)
-* [Trading with the Blockchain Backpack](website/part3.md)
-* [Interlude: Current Events and Why these Things have Value](website/part4.md)
+1. [Introduction: The Blockchain Backpack](website/part1.md)
+2. [Extension and Blockchain Item Modification](website/part2.md)
+3. [Trading with the Blockchain Backpack](website/part3.md)
+4. [The Trade-offs Being Made](website/part4.md)
+5. [Statistics and Stranges on the Blockchain](website/part5.md)
+6. [Crates and the Quality of Randomness](website/part6.md)
 
 The prototype itself lives under src/.
 
