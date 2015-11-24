@@ -10,7 +10,7 @@ tests: all_contracts
 # from handling.
 all_contracts: Backpack.abi
 %.abi: %.sol
-	solc $< --optimize 1 --json-abi file --binary file
+	solc --bin --abi $< --optimize -o build
 
 clean:
-	rm *.abi *.binary
+	rm -Rf build/

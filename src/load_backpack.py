@@ -62,7 +62,7 @@ print "Loaded %d items from backpack." % len(backpack_json['items'])
 print "Creating ethereum context..."
 s = tester.state()
 s.mine()
-fs = FileContractStore()
+fs = FileContractStore().build
 c = fs.Backpack.create(sender=tester.k0, state=s)
 
 
