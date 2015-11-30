@@ -137,29 +137,11 @@ contract Backpack {
   // ItemInstances and SchemaItems can have attributes. These attributes are
   // defined here.
   struct AttributeDefinition {
-    // The attribute number. Nonzero if this attribute exists.
-    uint32 defindex;
-
-    // A mapping of strings in the system.
-    mapping (bytes32 => bytes32) attribute_data;
-
     // Whether users with Permissions.ModifiableAttribute can modify this
     // attribute. For security reasons, this is a default value and is stored
     // per attribute on items which receive this attribute. modifiable
     // attributes may not be placed on schema items.
     bool modifiable;
-  }
-
-  function SetAttribute(uint32 defindex, bytes32 name, bytes32 value)
-      returns (bytes32) {
-    if (!HasPermission(msg.sender, Permissions.ModifySchema))
-      return "Permission Denied";
-    if (defindex == 0)
-      return "Invalid Attribute";
-    if (all_attributes[defindex].defindex == 0)
-      all_attributes[defindex].defindex = defindex;
-    all_attributes[defindex].attribute_data[name] = value;
-    return "OK";
   }
 
   function SetAttributeModifiable(uint32 defindex, bool modifiable)
@@ -168,14 +150,8 @@ contract Backpack {
       return "Permission Denied";
     if (defindex == 0)
       return "Invalid Attribute";
-    if (all_attributes[defindex].defindex == 0)
-      all_attributes[defindex].defindex = defindex;
     all_attributes[defindex].modifiable = modifiable;
     return "OK";
-  }
-
-  function GetAttribute(uint32 defindex, bytes32 name) returns (bytes32) {
-    return all_attributes[defindex].attribute_data[name];
   }
 
   // Storage for an IntegerAttribute on a SchemaItem or an ItemInstance.
@@ -239,8 +215,6 @@ contract Backpack {
                                        uint64 value) returns (bytes32) {
     if (!HasPermission(msg.sender, Permissions.ModifySchema))
       return "Permission Denied";
-    if (all_attributes[attribute_defindex].defindex == 0)
-      return "Invalid Attribute";
 
     SchemaItem schema = item_schemas[item_defindex];
     SetIntAttributeImpl(schema.int_attributes, attribute_defindex, value);
@@ -424,8 +398,6 @@ contract Backpack {
     ItemInstance item = item_storage[internal_id];
     if (item.state == ItemState.ITEM_EXISTS &&
         (item.owner == msg.sender || item.unlocked_for == msg.sender)) {
-      EnsureLockedImpl(internal_id, item_id);
-
       // Clean up references to the previous |item_id|.
       RemoveItemIdFromBackpackImpl(item_id, item.owner);
       delete all_items[item_id];
@@ -441,6 +413,7 @@ contract Backpack {
       uint64 new_item_id = GetNextItemID();
       item.id = new_item_id;
       item.owner = recipient;
+      item.unlocked_for = 0;
       all_items[new_item_id] = internal_id;
       AddItemIdToBackpackImpl(new_item_id, recipient);
       return new_item_id;
@@ -496,11 +469,6 @@ contract Backpack {
     if (item.state == ItemState.UNDER_CONSTRUCTION &&
         HasPermission(msg.sender, Permissions.AddAttributesToItem) &&
         (item.owner == msg.sender || item.unlocked_for == msg.sender)) {
-      // Verify that attribute_defindex is defined.
-      AttributeDefinition a = all_attributes[attribute_defindex];
-      if (a.defindex != attribute_defindex)
-        return;
-
       // Iterate through all the items and change the value if we already see a
       // value for this defindex.
       uint i = 0;
@@ -777,8 +745,6 @@ contract Backpack {
                                uint64 value) private {
     // Verify that attribute_defindex is defined.
     AttributeDefinition a = all_attributes[attribute_defindex];
-    if (a.defindex != attribute_defindex)
-      return;
 
     // Iterate through all the items and change the value if we already see a
     // value for this defindex.

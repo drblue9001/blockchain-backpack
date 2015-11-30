@@ -61,6 +61,8 @@ print "Loaded %d items from backpack." % len(backpack_json['items'])
 # Create the Backpack contract
 print "Creating ethereum context..."
 s = tester.state()
+print s.block.account_to_dict(tester.a0)
+
 s.mine()
 fs = FileContractStore().build
 c = fs.Backpack.create(sender=tester.k0, state=s)
@@ -68,22 +70,12 @@ c = fs.Backpack.create(sender=tester.k0, state=s)
 
 def IncrementMineCounter():
   IncrementMineCounter.calls_since_last_mine += 1;
-  if (IncrementMineCounter.calls_since_last_mine > 30):
+  if (IncrementMineCounter.calls_since_last_mine > 5):
     s.mine()
+    print s.block.account_to_dict(tester.a0)
     IncrementMineCounter.calls_since_last_mine = 0
 IncrementMineCounter.calls_since_last_mine = 0
 
-
-def EnsureAttribute(defindex):
-  if not defindex in EnsureAttribute.loaded_attributes:
-    a = attributes_by_defindex[defindex]
-    n = a["name"]
-    n = n[:32] if len(n) > 32 else n
-    print ("Loading attribute '%s'..." % n)
-    c.SetAttribute(defindex, "name", n)
-    IncrementMineCounter()
-    EnsureAttribute.loaded_attributes.add(defindex)
-EnsureAttribute.loaded_attributes = set()
 
 
 def EnsureSchemaItem(defindex):
@@ -92,9 +84,6 @@ def EnsureSchemaItem(defindex):
     print ("Loading item schema for '%s'..." % item["name"])
     c.SetItemSchema(defindex, item["min_ilevel"], item["max_ilevel"], 0);
     IncrementMineCounter()
-    # Upload all the attributes, too:
-    for a in item.get("attributes", {}):
-      EnsureAttribute(attributes_by_name[a["name"]]["defindex"])
     EnsureSchemaItem.loaded_item_schema.add(defindex);
 EnsureSchemaItem.loaded_item_schema = set();
 
@@ -105,7 +94,6 @@ EnsureSchemaItem.loaded_item_schema = set();
 # later; it is here more as a reminder.)
 for i in [214, 294, 379, 381, 383, 494]:
   c.SetAttributeModifiable(i, True)
-  EnsureAttribute(i)
 
 # TODO(drblue): We probably want to increment the backpack space here.
 
@@ -140,7 +128,6 @@ for item in backpack_json['items']:
   attr_keys = []
   attr_values = []
   for attr in on_item_attr:
-    EnsureAttribute(attr['defindex'])
     attr_keys.append(attr['defindex'])
     attr_values.append(attr['value'])
 

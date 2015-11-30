@@ -117,18 +117,8 @@ class UsersAndPermissionsTest(BackpackTest):
 
 class AttributeTest(BackpackTest):
     def test_modify_schema_permission(self):
-        self.assertEquals(self.contract.SetAttribute(1, "Two", "Three", sender=tester.k1),
+        self.assertEquals(self.contract.SetAttributeModifiable(1, True, sender=tester.k1),
                           kPermissionDenied);
-
-    def test_cant_set_zero(self):
-        self.assertEquals(self.contract.SetAttribute(0, "Zero", "Emptiness is Loneliness"),
-                          kInvalidAttribute);
-        self.assertEquals(self.contract.GetAttribute(0, "Zero"), kNullString);
-
-    def test_can_set_property(self):
-        self.assertEquals(self.contract.SetAttribute(1, "One", "1"), kOK);
-        self.assertEquals(self.contract.GetAttribute(1, "One"),
-                          '1\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00');
 
 class SchemaTest(BackpackTest):
     def test_schema_permission(self):
@@ -139,15 +129,8 @@ class SchemaTest(BackpackTest):
         self.assertEquals(self.contract.SetItemSchema(18, 5, 25, 0), kOK);
         self.assertEquals(self.contract.GetItemLevelRange(18), [5, 25]);
 
-    def test_cant_add_invalid_attribute(self):
-        self.assertEquals(self.contract.SetItemSchema(18, 5, 25, 0), kOK);
-        self.assertEquals(self.contract.AddIntAttributeToItemSchema(18, 6, 15),
-                          kInvalidAttribute);
-
     def test_can_add_valid_attribute(self):
         # Build attribute '388', "kill eater kill type"
-        self.assertEquals(self.contract.SetAttribute(388, "name", "kill eater kill type"), kOK);
-        self.assertEquals(self.contract.SetAttribute(388, "attribute_class", "kill_eater_kill_type"), kOK);
 
         # Add the attribute to "Sleeveless in Siberia" (30556).
         self.assertEquals(self.contract.SetItemSchema(30556, 1, 100, 0), kOK);
@@ -302,11 +285,6 @@ class ItemsTests(BackpackTest):
         self.assertEquals([], item_ids);
 
     def test_set_int_attribute(self):
-        self.assertEquals(self.contract.CreateUser(tester.a1), kOK);
-        self.assertEquals(self.contract.SetAttribute(142, "name",
-                                                     "set item tint RGB"),
-                          kOK);
-
         # Give User 1 an item #5.
         self.assertEquals(self.contract.SetItemSchema(5, 50, 50, 0), kOK);
         id = self.contract.CreateNewItem(5, 0, 1, tester.a1);
@@ -318,11 +296,7 @@ class ItemsTests(BackpackTest):
 
     # This is broken and I don't understand why this is broken.
     def test_open_for_modification(self):
-        self.assertEquals(self.contract.CreateUser(tester.a1), kOK);
         self.contract.SetPermission(tester.a2, 4, True);
-        self.assertEquals(self.contract.SetAttribute(142, "name",
-                                                     "set item tint RGB"),
-                          kOK);
 
         # Give User 1 an item #5.
         self.assertEquals(self.contract.SetItemSchema(5, 50, 50, 0), kOK);
@@ -375,11 +349,6 @@ class ModifiableAttributeTest(BackpackTest):
 
 
     def test_cant_set_normal_attribute(self):
-        self.assertEquals(self.contract.SetAttribute(142, "name",
-                                                     "set item tint RGB"),
-                          kOK);
-
-
         self.assertEquals(self.contract.SetItemSchema(94, 1, 100, 0), kOK);
         texas_id = self.contract.CreateNewItem(94, 0, 1, tester.a1);
         self.contract.SetIntAttribute(texas_id, 142, 81);
@@ -414,19 +383,6 @@ class PaintCanTest(BackpackTest):
 
 
     def test_paint_can(self):
-        # Step one: define the set_item_tint_rgb attribute. This is shared
-        # between paint cans and
-        self.assertEquals(self.contract.SetAttribute(142, "name",
-                                                     "set item tint RGB"),
-                          kOK);
-
-        # Step two: define the attribute 999999 as
-        # capabilities:{"paintable"}. This works around things having
-        # dictionaries.
-        self.assertEquals(self.contract.SetAttribute(999999, "name",
-                                                     "capabilities_paintable"),
-                          kOK);
-
         # Step three: define the Australium gold paint can. While there's just
         # one copy of the contract shared among paint cans, each can
         self.assertEquals(self.contract.SetItemSchema(5037, 5, 5,
@@ -474,10 +430,6 @@ class RestorePaintJobTest(BackpackTest):
         self.assertEquals(self.contract.CreateUser(tester.a1), kOK);
 
     def test_can_restore_paint_job(self):
-        self.assertEquals(self.contract.SetAttribute(142, "name",
-                                                     "set item tint RGB"),
-                          kOK);
-
         # a1 has a Texas Ten Gallon hat.
         self.assertEquals(self.contract.SetItemSchema(94, 1, 100, 0), kOK);
         texas_id = self.contract.CreateNewItem(94, 0, 1, tester.a1);
