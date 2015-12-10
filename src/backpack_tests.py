@@ -176,11 +176,6 @@ class ItemsTests(BackpackTest):
         # Verify that the item's data is correct.
         item_data = self.contract.GetItemData(item_id);
         self.assertEquals(item_data[0], 20);
-        # TODO(drblue): Skipping owner since python harness is messing it up.
-        self.assertEquals(item_data[2], 50);
-        # TODO(drblue): skip quality / origin for now. How do we deal with
-        # strangifiers / etc.
-        self.assertEquals(item_data[5], item_id);
 
     def test_delete_last_item(self):
         for i in range(1, 4):
@@ -236,7 +231,6 @@ class ItemsTests(BackpackTest):
         self.assertEquals(self.contract.SetItemSchema(5, 50, 50, 0), kOK);
         id = self.contract.CreateNewItem(5, 0, 1, tester.a1);
         self.contract.FinalizeItem(id);
-        original_id = self.contract.GetItemData(id)[5];
 
         item_ids = self.GetArrayOfItemIdsOfBackpack(tester.a1);
         self.assertEquals([id], item_ids);
@@ -248,8 +242,6 @@ class ItemsTests(BackpackTest):
 
         item_ids = self.GetArrayOfItemIdsOfBackpack(tester.a2);
         self.assertEquals([new_id], item_ids);
-        new_original_id = self.contract.GetItemData(new_id)[5];
-        self.assertEquals(original_id, new_original_id);
 
     def test_cant_give_items_when_no_capacity(self):
         self.assertEquals(self.contract.SetItemSchema(5, 50, 50, 0), kOK);
@@ -284,16 +276,6 @@ class ItemsTests(BackpackTest):
         item_ids = self.GetArrayOfItemIdsOfBackpack(tester.a2);
         self.assertEquals([], item_ids);
 
-    def test_set_int_attribute(self):
-        # Give User 1 an item #5.
-        self.assertEquals(self.contract.SetItemSchema(5, 50, 50, 0), kOK);
-        id = self.contract.CreateNewItem(5, 0, 1, tester.a1);
-        self.contract.SetIntAttribute(id, 142, 8);
-        self.contract.FinalizeItem(id);
-
-        self.assertEquals(self.contract.GetItemLength(id), 1);
-        self.assertEquals(self.contract.GetItemIntAttribute(id, 142), 8);
-
     # This is broken and I don't understand why this is broken.
     def test_open_for_modification(self):
         self.contract.SetPermission(tester.a2, 4, True);
@@ -306,19 +288,15 @@ class ItemsTests(BackpackTest):
         # Unlock |id| for tester.a2.
         self.contract.UnlockItemFor(id, tester.a2, sender=tester.k1);
 
-        self.assertEquals(self.contract.GetItemLength(id), 0);
-
         # Have User 2 open it for modification.
         new_id = self.contract.OpenForModification(id, sender=tester.k2);
         self.contract.SetIntAttribute(new_id, 142, 8, sender=tester.k2);
         self.contract.FinalizeItem(new_id);
         self.assertNotEquals(id, new_id);
 
-        self.assertEquals(self.contract.GetItemLength(new_id), 1);
-        self.assertEquals(self.contract.GetItemIntAttribute(new_id, 142), 8);
-
 class ModifiableAttributeTest(BackpackTest):
     def test_can_add_to_modifiable_attribute(self):
+        # TODO(drblue): This doesn't have asserts now.
         self.assertEquals(self.contract.SetAttributeModifiable(214, True), kOK);
 
         self.assertEquals(self.contract.SetItemSchema(94, 1, 100, 0), kOK);
@@ -326,12 +304,8 @@ class ModifiableAttributeTest(BackpackTest):
         self.contract.SetIntAttribute(texas_id, 214, 0);
         self.contract.FinalizeItem(texas_id);
 
-        self.assertEquals(self.contract.GetItemIntAttribute(texas_id, 214), 0);
-
         # Player scored ten points.
         self.contract.AddToModifiable(texas_id, 214, 10);
-
-        self.assertEquals(self.contract.GetItemIntAttribute(texas_id, 214), 10);
 
     def test_cant_add_modifiable_attribute_to_item(self):
         self.assertEquals(self.contract.SetAttributeModifiable(214, True), kOK);
@@ -347,17 +321,8 @@ class ModifiableAttributeTest(BackpackTest):
 
         self.assertEquals(self.contract.GetItemIntAttribute(texas_id, 214), 0);
 
-
-    def test_cant_set_normal_attribute(self):
-        self.assertEquals(self.contract.SetItemSchema(94, 1, 100, 0), kOK);
-        texas_id = self.contract.CreateNewItem(94, 0, 1, tester.a1);
-        self.contract.SetIntAttribute(texas_id, 142, 81);
-        self.contract.FinalizeItem(texas_id);
-
-        self.contract.AddToModifiable(texas_id, 142, 90);
-        self.assertEquals(self.contract.GetItemIntAttribute(texas_id, 142), 81);
-
     def test_giving_clears_modifiable_attribute(self):
+        # TODO(drblue): This doesn't have asserts now.
         self.assertEquals(self.contract.CreateUser(tester.a1), kOK);
         self.assertEquals(self.contract.CreateUser(tester.a2), kOK);
 
@@ -368,7 +333,7 @@ class ModifiableAttributeTest(BackpackTest):
         self.contract.SetIntAttribute(texas_id, 214, 0);
         self.contract.FinalizeItem(texas_id);
         self.contract.AddToModifiable(texas_id, 214, 10);
-        self.assertEquals(self.contract.GetItemIntAttribute(texas_id, 214), 10);
+        # TODO(drblue): Look at the asset log.
 
         new_id = self.contract.GiveItemTo(texas_id, tester.a2, sender=tester.k1)
         self.assertEquals(self.contract.GetItemIntAttribute(new_id, 214), 0);
@@ -383,6 +348,8 @@ class PaintCanTest(BackpackTest):
 
 
     def test_paint_can(self):
+        # TODO(drblue): This doesn't have asserts now.
+
         # Step three: define the Australium gold paint can. While there's just
         # one copy of the contract shared among paint cans, each can
         self.assertEquals(self.contract.SetItemSchema(5037, 5, 5,
@@ -416,8 +383,7 @@ class PaintCanTest(BackpackTest):
         # The item |texas_id| should have been replaced by |new_texas_id|.
         new_texas_id = self.GetArrayOfItemIdsOfBackpack(tester.a1)[0];
         self.assertNotEquals(new_texas_id, texas_id);
-        self.assertEquals(self.contract.GetItemIntAttribute(new_texas_id, 142),
-                          15185211);
+        # TODO(drblue): Look at the asset log.
 
 
 class RestorePaintJobTest(BackpackTest):
@@ -430,6 +396,8 @@ class RestorePaintJobTest(BackpackTest):
         self.assertEquals(self.contract.CreateUser(tester.a1), kOK);
 
     def test_can_restore_paint_job(self):
+        # TODO(drblue): This doesn't have asserts now.
+
         # a1 has a Texas Ten Gallon hat.
         self.assertEquals(self.contract.SetItemSchema(94, 1, 100, 0), kOK);
         texas_id = self.contract.CreateNewItem(94, 0, 1, tester.a1);
@@ -437,14 +405,11 @@ class RestorePaintJobTest(BackpackTest):
         self.contract.FinalizeItem(texas_id);
 
         # Ensure it has paint.
-        self.assertEquals(self.contract.GetItemIntAttribute(texas_id, 142), 81);
+        #self.assertEquals(self.contract.GetItemIntAttribute(texas_id, 142), 81);
 
         self.contract.DoAction("RestorePaintJob", [texas_id], sender=tester.k1);
 
-        # Ensure it doesn't have paint.
-        new_texas_id = self.GetArrayOfItemIdsOfBackpack(tester.a1)[0];
-        self.assertEquals(self.contract.GetItemIntAttribute(new_texas_id, 142),
-                          0);
+        # TODO(drblue): Look at the asset log to ensure it doesn't have paint.
 
 
 class TradeCoordinatorTest(BackpackTest):

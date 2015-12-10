@@ -224,6 +224,9 @@ contract Backpack {
   // --------------------------------------------------------------------------
   // Part 3: Item Instances
   //
+  // 
+
+  //
   // SchemaItem defines the shared characteristics of a group of items. You can
   // think of SchemaItems as classes to ItemInstance's objects.
   enum ItemState {
@@ -235,6 +238,31 @@ contract Backpack {
     // This item is currently being constructed and hasn't been finalized yet.
     UNDER_CONSTRUCTION
   }
+
+  event ItemCreated(address indexed owner,
+                    uint64 indexed id,
+                    uint64 original_id,
+                    uint32 defindex,
+                    uint16 level,
+                    uint16 quality,
+                    uint16 origin);
+
+  event ItemTransformed(address indexed owner,
+                        uint64 indexed id,
+                        uint64 indexed old_id);
+  event ItemGive(address indexed owner,
+                 address new_owner,
+                 uint64 indexed id,
+                 uint64 indexed old_id);
+
+  event ItemSetIntAttribute(uint64 indexed id,
+                            uint32 attribute_defindex,
+                            uint64 value);
+  event ItemRemoveIntAttribute(uint64 indexed id,
+                               uint32 attribute_defindex);
+
+  event ItemDeleted(address indexed owner,
+                    uint64 indexed id);
 
   // This is take three at building an item database.
   //
@@ -257,29 +285,8 @@ contract Backpack {
     // someone, this is STATE_ITEM_EXISTS.
     ItemState state;
 
-    // -- Why inline the next three uint16? To save space. All items have these
-    // three properties and the world works on unprincipled excpetions and
-    // hacks.
-
-    // An item's level. This is (usually) a pseudorandom number between 1-100
-    // as defined by the item schema. However, in Mann vs Machine, the item
-    // level is set to a player's number of tours of duty, so it can be much
-    // larger, hence a 16 bit integer.
-    uint16 level;
-    uint16 quality;
-    uint16 origin;
-
-    // -- End unprincipled exceptions.
-
     // The item type index.
     uint32 defindex;
-
-    // The original id this item was created with.
-    uint64 original_id;
-
-    // New values for this item.
-    IntegerAttribute[] int_attributes;
-    StringAttribute[] str_attributes;
   }
 
   // Used to create new items. If the caller has permission to make new items,
@@ -359,6 +366,9 @@ contract Backpack {
       delete all_items[item_id];
 
       uint64 new_item_id = GetNextItemID();
+
+      ItemTransformed(item.owner, new_item_id, item.id);
+
       item.id = new_item_id;
       item.state = ItemState.UNDER_CONSTRUCTION;
       all_items[new_item_id] = internal_id;
@@ -402,20 +412,15 @@ contract Backpack {
       RemoveItemIdFromBackpackImpl(item_id, item.owner);
       delete all_items[item_id];
 
-      // Clean up modifiable attributes.
-      uint i = 0;
-      for (i = 0; i < item.int_attributes.length; ++i) {
-        IntegerAttribute attr = item.int_attributes[i];
-        if (attr.modifiable)
-          attr.value = 0;
-      }
-
       uint64 new_item_id = GetNextItemID();
+      ItemGive(recipient, item.owner, new_item_id, item.id);
+
       item.id = new_item_id;
       item.owner = recipient;
       item.unlocked_for = 0;
       all_items[new_item_id] = internal_id;
       AddItemIdToBackpackImpl(new_item_id, recipient);
+
       return new_item_id;
     }
 
@@ -436,7 +441,7 @@ contract Backpack {
     if (item.state == ItemState.UNDER_CONSTRUCTION &&
         HasPermission(msg.sender, Permissions.AddAttributesToItem) &&
         (item.owner == msg.sender || item.unlocked_for == msg.sender)) {
-      SetIntAttributeImpl(item.int_attributes, attribute_defindex, value);
+      ItemSetIntAttribute(item_id, attribute_defindex, value);
     }
   }
 
@@ -455,7 +460,7 @@ contract Backpack {
         HasPermission(msg.sender, Permissions.AddAttributesToItem) &&
         (item.owner == msg.sender || item.unlocked_for == msg.sender)) {
       for (uint i = 0; i < keys.length; ++i) {
-        SetIntAttributeImpl(item.int_attributes, keys[i], values[i]);
+        ItemSetIntAttribute(item_id, keys[i], values[i]);
       }
     }
   }
@@ -469,22 +474,7 @@ contract Backpack {
     if (item.state == ItemState.UNDER_CONSTRUCTION &&
         HasPermission(msg.sender, Permissions.AddAttributesToItem) &&
         (item.owner == msg.sender || item.unlocked_for == msg.sender)) {
-      // Iterate through all the items and change the value if we already see a
-      // value for this defindex.
-      uint i = 0;
-      uint last = item.int_attributes.length - 1;
-      for (i = 0; i < item.int_attributes.length; ++i) {
-        IntegerAttribute attr = item.int_attributes[i];
-        if (attr.defindex == attribute_defindex) {
-          // If we are not the last item in the list, we copy the last item in
-          // the list to where we are so we don't have holes.
-          if (i != last)
-            attr = item.int_attributes[last];
-
-          item.int_attributes.length--;
-          return;
-        }
-      }
+      ItemRemoveIntAttribute(item_id, attribute_defindex);
     }
   }
 
@@ -545,6 +535,8 @@ contract Backpack {
 
       RemoveItemIdFromBackpackImpl(item_id, item.owner);
 
+      ItemDeleted(item.owner, item.id);
+
       // Delete the actual item.
       delete item_storage[internal_id];
       delete all_items[item_id];
@@ -552,8 +544,7 @@ contract Backpack {
   }
 
   function GetItemData(uint64 item_id) constant
-      returns (uint32 defindex, address owner, uint16 level,
-               uint16 quality, uint16 origin, uint64 original_id) {
+      returns (uint32 defindex, address owner) {
     uint256 internal_id = all_items[item_id];
     if (internal_id == 0)
       return;
@@ -561,10 +552,6 @@ contract Backpack {
     ItemInstance item = item_storage[internal_id];
     defindex = item.defindex;
     owner = item.owner;
-    level = item.level;
-    quality = item.quality;
-    origin = item.origin;
-    original_id = item.original_id;
   }
 
   function GetItemDefindex(uint64 item_id) constant returns (uint32) {
@@ -574,15 +561,6 @@ contract Backpack {
 
     ItemInstance item = item_storage[internal_id];
     return item.defindex;
-  }
-
-  function GetItemLength(uint64 item_id) constant returns (uint256 count) {
-    uint256 internal_id = all_items[item_id];
-    if (internal_id == 0)
-      return;
-
-    ItemInstance item = item_storage[internal_id];
-    return item.int_attributes.length;
   }
 
   function GetItemOwner(uint64 item_id) constant returns (address owner) {
@@ -604,27 +582,19 @@ contract Backpack {
         (item.owner == msg.sender || item.unlocked_for == msg.sender);
   }
 
+  /* TODO(drblue): Rename this method since it now accesses just schema data. */
   function GetItemIntAttribute(uint64 item_id, uint32 defindex) constant
       returns (uint64 value) {
     uint256 internal_id = all_items[item_id];
     if (internal_id == 0)
       return;
 
-    // Iterate through all the items and change the value if we already see a
-    // value for this defindex.
-    ItemInstance item = item_storage[internal_id];
-    for (uint i = 0; i < item.int_attributes.length; ++i) {
-      IntegerAttribute attr = item.int_attributes[i];
-      if (attr.defindex == defindex) {
-        return attr.value;
-      }
-    }
-
     // The item might have an attribute as part of its schema, which we fall
     // back on when we don't have an explicit value set.
+    ItemInstance item = item_storage[internal_id];
     SchemaItem schema = item_schemas[item.defindex];
-    for (i = 0; i < schema.int_attributes.length; ++i) {
-      attr = schema.int_attributes[i];
+    for (uint i = 0; i < schema.int_attributes.length; ++i) {
+      IntegerAttribute attr = schema.int_attributes[i];
       if (attr.defindex == defindex) {
         return attr.value;
       }
@@ -682,18 +652,7 @@ contract Backpack {
     if (internal_id == 0)
       return;
 
-    // Iterate through all the attributes on the item and add the amount if
-    // the referenced attribute exists and is modifiable.
-    ItemInstance item = item_storage[internal_id];
-    uint i = 0;
-    for (i = 0; i < item.int_attributes.length; ++i) {
-      IntegerAttribute attr = item.int_attributes[i];
-      if (attr.defindex == attribute_defindex &&
-          attr.modifiable) {
-        attr.value = attr.value + amount;
-        return;
-      }
-    }
+    /* TODO(drblue): Punting for now; must deal with the new world. */
 
     // AddToModifiable can only be used to modify existing attributes. Invalid
     // input.
@@ -721,14 +680,13 @@ contract Backpack {
     item.owner = recipient;
     item.unlocked_for = unlocked_for;
     item.state = ItemState.UNDER_CONSTRUCTION;
-    item.level = level;
-    item.quality = quality;
-    item.origin = origin;
     item.defindex = defindex;
+
     if (original_id == 0)
-      item.original_id = item_id;
-    else
-      item.original_id = original_id;
+      original_id = item_id;
+
+    ItemCreated(recipient, item_id, original_id,
+                defindex, level, quality, origin);
 
     all_items[item_id] = next_internal_id;
 
