@@ -73,8 +73,49 @@ Previously, the amount of data per item could be fairly high: the amount of stor
 
 This may have been a premature optimization, so now that the representation on chain is two 256-bit integers per item, let's remove the ID mapping.
 
-| Gas     | @ 10 szabo | @ 1 szabo | @ 0.5 szabos |  @ 0.05 szabos |
-|---------|------------|-----------|--------------|---------------:|
-| 218,701 |      $2.18 |     $0.21 |        $0.10 |         $0.010 |
+| Gas     | @ 10 szabo | @ 1 szabo | @ 0.5 szabos | @ 0.05 szabos |
+|---------|------------|-----------|--------------|--------------:|
+| 218,701 |      $2.18 |     $0.21 |        $0.10 |         $0.01 |
 
 This gain is relatively minor over the previous one, but it also simplifies the code by quite a bit: there's no more internal conversions from public ids to internal ones.
+
+### Minimizing Per-Transaction Costs
+
+Every transaction has a base cost of 21,000 gas. If we have a minimum of five transactions to create an item, the absolute theoretical minimum is a gas cost of 105,000 gas. This is roughly half of the current gas cost to deploy our test item.
+
+If we were to deploy the super simple contract:
+
+```cpp
+contract Deployer {
+  function ImportItem(uint32 defindex,
+                      uint16 quality,
+                      uint16 origin,
+                      uint16 level,
+                      uint64 original_id,
+                      address recipient,
+                      uint32[] keys,
+                      uint64[] values) returns (uint64 id) {
+    if (!bp.HasPermissionInt(msg.sender, 3))
+      return 0;
+
+    id = bp.ImportItem(defindex, quality, origin, level, original_id,
+                       recipient);
+    bp.SetIntAttributes(id, keys, values);
+    bp.FinalizeItem(id);
+  }
+
+  // Constructor, etc. elided.
+}
+```
+
+We give this contract permission to grant items and add attributes to them. I suspect that creating a central contract with a few primitives and then putting most of the routine work into helper contracts to reduce the cost of common cases would be be a common pattern in a deployed system. For example, we could write a deployer contract that would give an item with the same properties to a list of addresses in preparation for some sort of large giveaway.
+
+We now have a helper contract that lets us deploy an item in one transaction:
+
+| Gas     | @ 10 szabo | @ 1 szabo | @ 0.5 szabos |  @ 0.05 szabos |
+|---------|------------|-----------|--------------|---------------:|
+| 134,067 |      $1.34 |     $0.13 |        $0.06 |         $0.006 |
+
+As we can see, deploying the above contract is cost effective. It would take a one time cost of 334,613 gas, and it will pay for itself in three items.
+
+Now we're really starting to get somewhere! We're almost to a half cent to record an item on the blockchain! Can we do better?

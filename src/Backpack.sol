@@ -71,6 +71,11 @@ contract Backpack {
     }
   }
 
+  function HasPermissionInt(address user, uint32 permission)
+      constant returns (bool) {
+    return HasPermission(user, Permissions(permission));
+  }
+
   function HasPermission(address user, Permissions permission)
       constant returns (bool) {
     if (uint256(permission) >= kNumPermissions)
@@ -1016,4 +1021,29 @@ contract Crate is MutatingExtensionContract {
   uint32[9] item_ids;
   RollID[] open_rolls;
   mapping (uint => uint[]) precommitments_per_block_number;
+}
+
+contract Deployer {
+  function ImportItem(uint32 defindex,
+                      uint16 quality,
+                      uint16 origin,
+                      uint16 level,
+                      uint64 original_id,
+                      address recipient,
+                      uint32[] keys,
+                      uint64[] values) returns (uint64 id) {
+    if (!bp.HasPermissionInt(msg.sender, 3))
+      return 0;
+
+    id = bp.ImportItem(defindex, quality, origin, level, original_id,
+                       recipient);
+    bp.SetIntAttributes(id, keys, values);
+    bp.FinalizeItem(id);
+  }
+
+  function Deployer(Backpack system) {
+    bp = system;
+  }
+
+  Backpack bp;
 }
