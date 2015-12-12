@@ -64,3 +64,17 @@ OK, so that's a little better. We improved costs by a little more than a third. 
 Well, we can't look at the item state directly--now only ownership and a few pieces of metadata are stored in chain memory, while the rest is stored as event data with the transaction. This is all still cryptographically secure and authenticated but to recreate the state of the world, you would have to perform an O(n) walk across all transactions to this contract.
 
 The trade off means that any server that wanted to query the state of the world wouldn't be able to do O(1) lookups directly onto blockchain data; they would process all transactions themselves to reconstruct item's state, or rely on another server to do so. This is still more distributed than the current system.
+
+### Redo ID Mappings
+
+Now that we've minimized the amount of data written per item, let's optimize the internal data structures.
+
+Previously, the amount of data per item could be fairly high: the amount of storage grew linearly with the number of attributes. Therefore, to make the cost of giving an item from one account to another constant, I put in a mapping table from an items public id to an internal id. Modifying an item or giving it away just removed the old public id and replaced it with the new one.
+
+This may have been a premature optimization, so now that the representation on chain is two 256-bit integers per item, let's remove the ID mapping.
+
+| Gas     | @ 10 szabo | @ 1 szabo | @ 0.5 szabos |  @ 0.05 szabos |
+|---------|------------|-----------|--------------|---------------:|
+| 218,701 |      $2.18 |     $0.21 |        $0.10 |         $0.010 |
+
+This gain is relatively minor over the previous one, but it also simplifies the code by quite a bit: there's no more internal conversions from public ids to internal ones.

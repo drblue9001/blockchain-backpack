@@ -474,6 +474,8 @@ class CrateTest(BackpackTest):
         self.key_id = self.contract.CreateNewItem(5021, 0, 1, tester.a1);
         self.contract.FinalizeItem(self.key_id);
 
+        self.assertEquals(self.contract.GetNumberOfItemsOwnedFor(tester.a1), 2);
+
 
     def testCrateWorking(self):
         # Precommit to receiving an item.

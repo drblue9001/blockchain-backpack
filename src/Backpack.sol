@@ -354,24 +354,21 @@ contract Backpack {
     if (!HasPermission(msg.sender, Permissions.AddAttributesToItem))
       return 0;
 
-    uint256 internal_id = all_items[item_id];
-    if (internal_id == 0)
-      return 0;
-
-    ItemInstance item = item_storage[internal_id];
+    ItemInstance item = new_all_items[item_id];
     if (item.state == ItemState.ITEM_EXISTS &&
         (item.owner == msg.sender || item.unlocked_for == msg.sender)) {
-      EnsureLockedImpl(internal_id, item_id);
-
-      delete all_items[item_id];
+      item.unlocked_for = 0;
 
       uint64 new_item_id = GetNextItemID();
 
       ItemTransformed(item.owner, new_item_id, item.id);
 
-      item.id = new_item_id;
-      item.state = ItemState.UNDER_CONSTRUCTION;
-      all_items[new_item_id] = internal_id;
+      ItemInstance new_item = new_all_items[new_item_id];
+      new_item.id = new_item_id;
+      new_item.owner = item.owner;
+      new_item.unlocked_for = msg.sender;
+      new_item.state = ItemState.UNDER_CONSTRUCTION;
+      new_item.defindex = item.defindex;
 
       User u = user_data[item.owner];
       for (uint32 i = 0; i < u.backpack_length; ++i) {
@@ -381,9 +378,7 @@ contract Backpack {
         }
       }
 
-      // Because we locked the item before, we now unlock the new item for the
-      // sender.
-      EnsureUnlockedImpl(internal_id, new_item_id, msg.sender);
+      delete new_all_items[item_id];
 
       return new_item_id;
     }
@@ -401,25 +396,25 @@ contract Backpack {
     if (u.backpack_length >= u.backpack_capacity)
       return 0;
 
-    uint256 internal_id = all_items[item_id];
-    if (internal_id == 0)
-      return 0;
-
-    ItemInstance item = item_storage[internal_id];
+    ItemInstance item = new_all_items[item_id];
     if (item.state == ItemState.ITEM_EXISTS &&
         (item.owner == msg.sender || item.unlocked_for == msg.sender)) {
       // Clean up references to the previous |item_id|.
       RemoveItemIdFromBackpackImpl(item_id, item.owner);
-      delete all_items[item_id];
 
       uint64 new_item_id = GetNextItemID();
       ItemGive(recipient, item.owner, new_item_id, item.id);
 
-      item.id = new_item_id;
-      item.owner = recipient;
-      item.unlocked_for = 0;
-      all_items[new_item_id] = internal_id;
+      ItemInstance new_item = new_all_items[new_item_id];
+      new_item.id = new_item_id;
+      new_item.owner = recipient;
+      new_item.unlocked_for = 0;
+      new_item.state = ItemState.ITEM_EXISTS;
+      new_item.defindex = item.defindex;
+
       AddItemIdToBackpackImpl(new_item_id, recipient);
+
+      delete new_all_items[item_id];
 
       return new_item_id;
     }
@@ -433,11 +428,7 @@ contract Backpack {
   function SetIntAttribute(uint64 item_id,
                            uint32 attribute_defindex,
                            uint64 value) {
-    uint256 internal_id = all_items[item_id];
-    if (internal_id == 0)
-      return;
-
-    ItemInstance item = item_storage[internal_id];
+    ItemInstance item = new_all_items[item_id];
     if (item.state == ItemState.UNDER_CONSTRUCTION &&
         HasPermission(msg.sender, Permissions.AddAttributesToItem) &&
         (item.owner == msg.sender || item.unlocked_for == msg.sender)) {
@@ -448,14 +439,10 @@ contract Backpack {
   function SetIntAttributes(uint64 item_id,
                             uint32[] keys,
                             uint64[] values) external {
-    uint256 internal_id = all_items[item_id];
-    if (internal_id == 0)
-      return;
-
     if (keys.length != values.length)
       return;
 
-    ItemInstance item = item_storage[internal_id];
+    ItemInstance item = new_all_items[item_id];
     if (item.state == ItemState.UNDER_CONSTRUCTION &&
         HasPermission(msg.sender, Permissions.AddAttributesToItem) &&
         (item.owner == msg.sender || item.unlocked_for == msg.sender)) {
@@ -466,11 +453,7 @@ contract Backpack {
   }
 
   function RemoveIntAttribute(uint64 item_id, uint32 attribute_defindex) {
-    uint256 internal_id = all_items[item_id];
-    if (internal_id == 0)
-      return;
-
-    ItemInstance item = item_storage[internal_id];
+    ItemInstance item = new_all_items[item_id];
     if (item.state == ItemState.UNDER_CONSTRUCTION &&
         HasPermission(msg.sender, Permissions.AddAttributesToItem) &&
         (item.owner == msg.sender || item.unlocked_for == msg.sender)) {
@@ -481,14 +464,10 @@ contract Backpack {
   // Marks an item in the under construction state as finalized. No further
   // modifications can be made to this item.
   function FinalizeItem(uint64 item_id) {
-    uint256 internal_id = all_items[item_id];
-    if (internal_id == 0)
-      return;
-
-    ItemInstance item = item_storage[internal_id];
+    ItemInstance item = new_all_items[item_id];
     if (item.state == ItemState.UNDER_CONSTRUCTION &&
         (item.owner == msg.sender || item.unlocked_for == msg.sender)) {
-      EnsureLockedImpl(internal_id, item_id);
+      item.unlocked_for = 0;
       item.state = ItemState.ITEM_EXISTS;
     }
   }
@@ -497,13 +476,9 @@ contract Backpack {
   //
   // (May only be called by |item_id|'s owner.)
   function UnlockItemFor(uint64 item_id, address user) {
-    uint256 internal_id = all_items[item_id];
-    if (internal_id == 0)
-      return;
-
-    ItemInstance item = item_storage[internal_id];
+    ItemInstance item = new_all_items[item_id];
     if (item.state == ItemState.ITEM_EXISTS && item.owner == msg.sender)
-      EnsureUnlockedImpl(internal_id, item_id, user);
+      item.unlocked_for = user;
   }
 
   // Revokes access to |item_id| by the address that current can act as
@@ -512,72 +487,47 @@ contract Backpack {
   // (May be called by |item_id|'s owner, or the current address temporarily
   // acting as the item's owner.)
   function LockItem(uint64 item_id) {
-    uint256 internal_id = all_items[item_id];
-    if (internal_id == 0)
-      return;
-
-    ItemInstance item = item_storage[internal_id];
+    ItemInstance item = new_all_items[item_id];
     if (item.owner == msg.sender || item.unlocked_for == msg.sender)
-      EnsureLockedImpl(internal_id, item_id);
+      item.unlocked_for = 0;
   }
 
   // Deletes the item.
   //
   // (May only be called by the item's owner or unlocked_for.)
   function DeleteItem(uint64 item_id) {
-    uint256 internal_id = all_items[item_id];
-    if (internal_id == 0)
-      return;
-
-    ItemInstance item = item_storage[internal_id];
+    ItemInstance item = new_all_items[item_id];
     if (item.owner == msg.sender || item.unlocked_for == msg.sender) {
-      EnsureLockedImpl(internal_id, item_id);
+      item.unlocked_for = 0;
 
       RemoveItemIdFromBackpackImpl(item_id, item.owner);
 
       ItemDeleted(item.owner, item.id);
 
       // Delete the actual item.
-      delete item_storage[internal_id];
-      delete all_items[item_id];
+      delete new_all_items[item_id];
     }
   }
 
   function GetItemData(uint64 item_id) constant
       returns (uint32 defindex, address owner) {
-    uint256 internal_id = all_items[item_id];
-    if (internal_id == 0)
-      return;
-
-    ItemInstance item = item_storage[internal_id];
+    ItemInstance item = new_all_items[item_id];
     defindex = item.defindex;
     owner = item.owner;
   }
 
   function GetItemDefindex(uint64 item_id) constant returns (uint32) {
-    uint256 internal_id = all_items[item_id];
-    if (internal_id == 0)
-      return;
-
-    ItemInstance item = item_storage[internal_id];
+    ItemInstance item = new_all_items[item_id];
     return item.defindex;
   }
 
   function GetItemOwner(uint64 item_id) constant returns (address owner) {
-    uint256 internal_id = all_items[item_id];
-    if (internal_id == 0)
-      return;
-
-    ItemInstance item = item_storage[internal_id];
+    ItemInstance item = new_all_items[item_id];
     return item.owner;
   }
 
   function CanGiveItem(uint64 item_id) constant returns (bool) {
-    uint256 internal_id = all_items[item_id];
-    if (internal_id == 0)
-      return false;
-
-    ItemInstance item = item_storage[internal_id];
+    ItemInstance item = new_all_items[item_id];
     return item.state == ItemState.ITEM_EXISTS &&
         (item.owner == msg.sender || item.unlocked_for == msg.sender);
   }
@@ -585,13 +535,9 @@ contract Backpack {
   /* TODO(drblue): Rename this method since it now accesses just schema data. */
   function GetItemIntAttribute(uint64 item_id, uint32 defindex) constant
       returns (uint64 value) {
-    uint256 internal_id = all_items[item_id];
-    if (internal_id == 0)
-      return;
-
     // The item might have an attribute as part of its schema, which we fall
     // back on when we don't have an explicit value set.
-    ItemInstance item = item_storage[internal_id];
+    ItemInstance item = new_all_items[item_id];
     SchemaItem schema = item_schemas[item.defindex];
     for (uint i = 0; i < schema.int_attributes.length; ++i) {
       IntegerAttribute attr = schema.int_attributes[i];
@@ -648,10 +594,6 @@ contract Backpack {
     if (!HasPermission(msg.sender, Permissions.ModifiableAttribute))
       return;
 
-    uint256 internal_id = all_items[item_id];
-    if (internal_id == 0)
-      return;
-
     /* TODO(drblue): Punting for now; must deal with the new world. */
 
     // AddToModifiable can only be used to modify existing attributes. Invalid
@@ -673,9 +615,7 @@ contract Backpack {
       returns (uint64) {
     uint64 item_id = GetNextItemID();
 
-    uint256 next_internal_id = item_storage.length;
-    item_storage.length++;
-    ItemInstance item =  item_storage[next_internal_id];
+    ItemInstance item = new_all_items[item_id];
     item.id = item_id;
     item.owner = recipient;
     item.unlocked_for = unlocked_for;
@@ -687,8 +627,6 @@ contract Backpack {
 
     ItemCreated(recipient, item_id, original_id,
                 defindex, level, quality, origin);
-
-    all_items[item_id] = next_internal_id;
 
     // Note that CreateNewItem always succeeds, up to the item limit.
     AddItemIdToBackpackImpl(item_id, recipient);
@@ -755,23 +693,14 @@ contract Backpack {
       private returns (bytes32 message) {
     // Verify that every input item exists and is owned by caller.
     for (uint i = 0; i < item_ids.length; ++i) {
-      uint256 internal_id = all_items[item_ids[i]];
-      if (internal_id == 0)
-        return "Input item doesn't exist";
-
-      ItemInstance item = item_storage[internal_id];
+      ItemInstance item = new_all_items[item_ids[i]];
       if (item.owner != owner)
         return "Sender does not own item.";
     }
 
-    // For every item in item_ids, ensure that it is locked (we're probably
-    // going to be modifying or deleting many of these items), and then do a
-    // local unlock for the action.
-    for (i = 0; i < item_ids.length; ++i) {
-      internal_id = all_items[item_ids[i]];
-      EnsureLockedImpl(internal_id, item_ids[i]);
-      UnlockItemFor(item_ids[i], action);
-    }
+    // For every item in item_ids, ensure that it is unlocked for the action.
+    for (i = 0; i < item_ids.length; ++i)
+      new_all_items[item_ids[i]].unlocked_for = action;
 
     // Actually run the contract.
     message =
@@ -780,34 +709,14 @@ contract Backpack {
     // Finally, iterate over all item_ids. Of the ones that still exist, ensure
     // that they are locked.
     for (i = 0; i < item_ids.length; ++i) {
-      internal_id = all_items[item_ids[i]];
-      if (internal_id != 0)
-        EnsureLockedImpl(internal_id, item_ids[i]);
+      item = new_all_items[item_ids[i]];
+      if (item.id == item_ids[i])
+        item.unlocked_for = 0;
     }
-  }
-
-  function EnsureLockedImpl(uint256 internal_id, uint64 item_id) private
-      returns(address was_unlocked_for) {
-    ItemInstance i = item_storage[internal_id];
-    if (i.unlocked_for != 0) {
-      was_unlocked_for = i.unlocked_for;
-      i.unlocked_for = 0;
-    } else {
-      was_unlocked_for = 0;
-    }
-  }
-
-  function EnsureUnlockedImpl(uint256 internal_id, uint64 item_id,
-                              address unlocked_for) private {
-    item_storage[internal_id].unlocked_for = unlocked_for;
   }
 
   function Backpack() {
     owner = msg.sender;
-
-    // We put a single null item in the front of |item_storage| so that we can
-    // ensure that 0 is an invalid item storage.
-    item_storage.length = 1;
 
     // As a way of having items both on chain, and off chain, compromise and
     // say that the item ids are all off chain until item 5000000000, then all
@@ -825,11 +734,7 @@ contract Backpack {
   // Maps item defindex to the schema definition.
   mapping (uint32 => SchemaItem) private item_schemas;
 
-  // 0 indexed storage of items.
-  ItemInstance[] private item_storage;
-
-  // Maps item ids to internal storage ids.
-  mapping (uint64 => uint256) private all_items;
+  mapping (uint64 => ItemInstance) private new_all_items;
 
   // Extension contracts.
   mapping (bytes32 => address) private actions;
