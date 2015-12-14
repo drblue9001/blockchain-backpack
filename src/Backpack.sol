@@ -55,10 +55,6 @@ contract Backpack {
     // the following code:
 
     uint32 backpack_length;
-
-    // An array of item ids. This can theorecitcally grow up to UINT32_MAX, but
-    // will usually be significantly smaller.
-    uint64[3200] item_ids;
   }
 
   function SetPermission(address user, Permissions permission, bool value)
@@ -129,11 +125,6 @@ contract Backpack {
 
   function GetNumberOfItemsOwnedFor(address user) constant returns (uint) {
     return user_data[user].backpack_length;
-  }
-
-  function GetItemIdFromBackpack(address user, uint32 i) constant
-      returns (uint64) {
-    return user_data[user].item_ids[i];
   }
 
   // --------------------------------------------------------------------------
@@ -375,13 +366,7 @@ contract Backpack {
       new_item.state = ItemState.UNDER_CONSTRUCTION;
       new_item.defindex = item.defindex;
 
-      User u = user_data[item.owner];
-      for (uint32 i = 0; i < u.backpack_length; ++i) {
-        if (u.item_ids[i] == item_id) {
-          u.item_ids[i] = new_item_id;
-          break;
-        }
-      }
+      // Opening an item for modification doesn't change any IDs.
 
       delete new_all_items[item_id];
 
@@ -404,8 +389,7 @@ contract Backpack {
     ItemInstance item = new_all_items[item_id];
     if (item.state == ItemState.ITEM_EXISTS &&
         (item.owner == msg.sender || item.unlocked_for == msg.sender)) {
-      // Clean up references to the previous |item_id|.
-      RemoveItemIdFromBackpackImpl(item_id, item.owner);
+      user_data[item.owner].backpack_length--;
 
       uint64 new_item_id = GetNextItemID();
       ItemGive(recipient, item.owner, new_item_id, item.id);
@@ -417,7 +401,7 @@ contract Backpack {
       new_item.state = ItemState.ITEM_EXISTS;
       new_item.defindex = item.defindex;
 
-      AddItemIdToBackpackImpl(new_item_id, recipient);
+      u.backpack_length++;
 
       delete new_all_items[item_id];
 
@@ -505,7 +489,7 @@ contract Backpack {
     if (item.owner == msg.sender || item.unlocked_for == msg.sender) {
       item.unlocked_for = 0;
 
-      RemoveItemIdFromBackpackImpl(item_id, item.owner);
+      user_data[item.owner].backpack_length--;
 
       ItemDeleted(item.owner, item.id);
 
@@ -633,8 +617,9 @@ contract Backpack {
     ItemCreated(recipient, item_id, original_id,
                 defindex, level, quality, origin);
 
-    // Note that CreateNewItem always succeeds, up to the item limit.
-    AddItemIdToBackpackImpl(item_id, recipient);
+    // Note that CreateNewItem always succeeds, even if it bumps past the item
+    // limit.
+    user_data[recipient].backpack_length++;
 
     // The item is left unfinalized and unlocked for the creator to possibly
     // add attributes and effects.
@@ -665,33 +650,6 @@ contract Backpack {
     attr.defindex = attribute_defindex;
     attr.value = value;
     attr.modifiable = a.modifiable;
-  }
-
-  function AddItemIdToBackpackImpl(uint64 item_id, address recipient) private {
-    User u = user_data[recipient];
-    u.item_ids[u.backpack_length] = item_id;
-    u.backpack_length++;
-  }
-
-  function RemoveItemIdFromBackpackImpl(uint64 item_id, address owner) private {
-    // Walk the owners backpack, looking for the reference to the item. When we
-    // find it, remove it.
-    User u = user_data[owner];
-    for (uint32 i = 0; i < u.backpack_length; ++i) {
-      if (u.item_ids[i] == item_id) {
-        if (i == u.backpack_length - 1) {
-          // We are the last item in the item list.
-          u.item_ids[i] = 0;
-        } else {
-          // We take the last item in the backpack list and move it here
-          u.item_ids[i] = u.item_ids[u.backpack_length - 1];
-          u.item_ids[u.backpack_length - 1] = 0;
-        }
-
-        u.backpack_length--;
-        break;
-      }
-    }
   }
 
   function DoActionImpl(address owner, uint64[] item_ids, address action)

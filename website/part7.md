@@ -10,7 +10,7 @@ So throughout this series, I've mentioned transactions costs, but didn't go into
 
 In Ethereum, each instruction in the Turing complete scripting language has an associated cost, along with additional costs for writes to blockchain memory. These costs are counted in _gas_. A user specifies the price per gas unit in Ether that they are willing to pay, and this layer of indirection creates a market for computation on the blockchain.
 
-Writes to the blockchain dominate transaction costs; it takes 3 gas to perform an addition but 20,000 gas to write a single 256-bit integer to the blockchain. Since we're writing all information about an item to the blockchain along with meta-data about a user's backpack state, how much do transactions in this system actually cost?
+Writes to the blockchain dominate transaction costs; it takes 3 gas to perform an addition but 20,000 gas to allocate a single 256-bit integer to the blockchain. Further modifications to a previously allocated 256-bit integer cost an additional 5,000 gas. Since we're writing all information about an item to the blockchain along with meta-data about a user's backpack state, how much do transactions in this system actually cost?
 
 For the rest of this article, we'll use a few simplifying assumptions. Ether is currently trading at $0.87 per 1 Ether, but we'll round this to a dollar. We'll then show the cost at different gas prices. For example: the code that makes up the Blockchain Backpack proof of concept is fairly large, and the one time deployment cost would be 2864931 gas. We'd display that like this:
 
@@ -118,4 +118,16 @@ We now have a helper contract that lets us deploy an item in one transaction:
 
 As we can see, deploying the above contract is cost effective. It would take a one time cost of 334,613 gas, and it will pay for itself in three items.
 
-Now we're really starting to get somewhere! We're almost to a half cent to record an item on the blockchain! Can we do better?
+### Removing Item Lookup by Player
+
+Backpack space is limited. In TF2, paid players start with 300 item slots, and must buy or trade for [Backpack Expanders][expander] to be able to own more items.
+
+[expander]: https://wiki.teamfortress.com/wiki/Expander
+
+The current proof of concept captures this requirement. However, not only did it keep track of the number of items a player owned, but it also kept track of which items, allowing contracts to go lookup what items are owned by an arbitrary keypair. This functionality was never used, removing it yields the following minor improvement:
+
+| Gas     | @ 10 szabo | @ 1 szabo | @ 0.5 szabos |  @ 0.05 szabos |
+|---------|------------|-----------|--------------|---------------:|
+| 113,644 |      $1.13 |     $0.11 |        $0.05 |         $0.005 |
+
+We could go further and remove the notion of limited backpack space from this system to remove one more write, but that would make this proof of concept diverge from the Valve item system as it exists today.
