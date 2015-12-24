@@ -257,6 +257,10 @@ contract Backpack {
   event ItemRemoveIntAttribute(uint64 indexed id,
                                uint32 attribute_defindex);
 
+  event ItemSetStrAttribute(uint64 indexed id,
+                            uint32 attribute_defindex,
+                            string value);
+
   event ItemDeleted(address indexed owner,
                     uint64 indexed id);
 
@@ -447,6 +451,17 @@ contract Backpack {
         HasPermission(msg.sender, Permissions.AddAttributesToItem) &&
         (item.owner == msg.sender || item.unlocked_for == msg.sender)) {
       ItemRemoveIntAttribute(item_id, attribute_defindex);
+    }
+  }
+
+  function SetStrAttribute(uint64 item_id,
+                           uint32 attribute_defindex,
+                           string value) {
+    ItemInstance item = new_all_items[item_id];
+    if (item.state == ItemState.UNDER_CONSTRUCTION &&
+        HasPermission(msg.sender, Permissions.AddAttributesToItem) &&
+        (item.owner == msg.sender || item.unlocked_for == msg.sender)) {
+      ItemSetStrAttribute(item_id, attribute_defindex, value);
     }
   }
 
@@ -982,6 +997,15 @@ contract Crate is MutatingExtensionContract {
 }
 
 contract Deployer {
+  function LoadSchema(uint32[] defindex, uint8[] min_level, uint8[] max_level) {
+    if (!bp.HasPermissionInt(msg.sender, 2))
+      return;
+
+    for (uint i = 0; i < defindex.length; ++i) {
+      bp.SetItemSchema(defindex[i], min_level[i], max_level[i], 0);
+    }
+  }
+
   function ImportItem(uint32 defindex,
                       uint16 quality,
                       uint16 origin,
@@ -997,6 +1021,42 @@ contract Deployer {
                        recipient);
     bp.SetIntAttributes(id, keys, values);
     bp.FinalizeItem(id);
+  }
+
+  function ImportItemWithAString(uint32 defindex,
+                                 uint16 quality,
+                                 uint16 origin,
+                                 uint16 level,
+                                 uint64 original_id,
+                                 address recipient,
+                                 uint32[] keys,
+                                 uint64[] values,
+                                 uint32 str_key,
+                                 string str_value) returns (uint64 id) {
+    if (!bp.HasPermissionInt(msg.sender, 3))
+      return 0;
+
+    id = bp.ImportItem(defindex, quality, origin, level, original_id,
+                       recipient);
+    bp.SetIntAttributes(id, keys, values);
+    bp.SetStrAttribute(id, str_key, str_value);
+    // Leave the item open for further modification.
+  }
+
+  function ImportSimpleItems(uint32[] defindex,
+                             uint16[] quality,
+                             uint16[] origin,
+                             uint16[] level,
+                             uint64[] original_id,
+                             address recipient) {
+    if (!bp.HasPermissionInt(msg.sender, 3))
+      return;
+
+    for (uint i = 0; i < defindex.length; ++i) {
+      uint64 id = bp.ImportItem(defindex[i], quality[i], origin[i], level[i],
+                                original_id[i], recipient);
+      bp.FinalizeItem(id);
+    }
   }
 
   function Deployer(Backpack system) {
