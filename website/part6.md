@@ -4,6 +4,9 @@ layout: page
 prev-page:
     title: "Statistics"
     url: part5.html
+next-page:
+    title: "Cost"
+    url: part7.html
 ---
 
 Crates and the Quality of Randomness

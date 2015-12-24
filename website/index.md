@@ -19,6 +19,7 @@ As virtual items economies have grown in size and represent more real world mone
 4. [The Trade-offs Being Made](part4.html)
 5. [Statistics and Stranges on the Blockchain](part5.html)
 6. [Crates and the Quality of Randomness](part6.html)
+7. [Optimization and Minimizing Costs](part7.html)
 
 ### Getting the code
 
