@@ -15,7 +15,7 @@ In Ethereum, each instruction in the Turing complete scripting language has an a
 
 Writes to the blockchain dominate transaction costs; it takes 3 gas to perform an addition but 20,000 gas to allocate a single 256-bit integer to the blockchain. Further modifications to a previously allocated 256-bit integer cost an additional 5,000 gas. Since we're writing all information about an item to the blockchain along with meta-data about a user's backpack state, how much do transactions in this system actually cost?
 
-For this article, we'll use a few simplifying assumptions. Ether is currently trading at $0.87 per 1 Ether, but we'll round this to a dollar. We'll then show the cost of certain actions at different gas prices. For example: the code that makes up the Blockchain Backpack proof of concept is fairly large, and the one time deployment cost would be 2,864,931 gas. We'll display that like this:
+For this article, we'll use a few simplifying assumptions. Ether is currently trading at $0.95 per 1 Ether, but we'll round this to a dollar. We'll then show the cost of certain actions at different gas prices. For example: the code that makes up the Blockchain Backpack proof of concept is fairly large, and the one time deployment cost would be 2,864,931 gas. We'll display that like this:
 
 |                   | Gas       | 10x Price | Current Price |  1/10x Price |
 |-------------------|-----------|-----------|---------------|-------------:|
