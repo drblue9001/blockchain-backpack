@@ -159,7 +159,7 @@ The first two entries above are contract deployment--they are a one time fixed c
 
 $1.62 is a bargain to secure my backpack. Even if the price of computation were to rise by an order of magnitude from its current price, I would still pay $16.26 to cryptographically secure my backpack in a heartbeat.
 
-[^1]: Technically, since starting the project, I've acquired two items which can't be currently represented. [Killstreak Kit Fabricators][fab] are the only item I've seen that use a recursive attributes.
+[^1]: Technically, since starting the project, I've acquired two items which can't be currently represented. [Killstreak Kit Fabricators][fab] are the only item I've seen that have a second dictionary as a value in what would otherwise be a simple mapping of integers to integers or strings. Eyeballing it, it seems like there's a simple one-to-one mapping to a flattened form, but I didn't go and try to develop that.
 
 [fab]: https://wiki.teamfortress.com/wiki/Killstreak_Kit_Fabricator
 [p1]: part1.html
